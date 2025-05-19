@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Paper2Notion</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Paper2Notion</h1>
+  <div>
+    <label for="pdfInput">PDFファイルを選択:</label>
+    <input type="file" id="pdfInput" accept=".pdf">
+  </div>
+  <div>
+    <button id="dropboxAuthBtn">Dropbox認証</button>
+    <span id="dropboxStatus"></span>
+  </div>
+  <div>
+    <button id="sendToNotionBtn">Notionに送信</button>
+  </div>
+  <div id="progress"></div>
+  <div id="result"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

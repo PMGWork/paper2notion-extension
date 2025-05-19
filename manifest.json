@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Paper2Notion",
+  "version": "0.1.0",
+  "description": "論文PDFからメタデータ抽出・要約・Dropbox/Notion連携を行うChrome拡張",
+  "permissions": [
+    "storage",
+    "identity",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://api.dropboxapi.com/*",
+    "https://content.dropboxapi.com/*",
+    "https://api.notion.com/*",
+    "https://api.crossref.org/*",
+    "http://export.arxiv.org/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self';"
+  },
+  "options_page": "options.html"
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Paper2Notion 設定</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <h1>Paper2Notion 設定</h1>
+  <form id="optionsForm">
+    <div>
+      <label for="dropboxAppKey">Dropbox App Key:</label>
+      <input type="text" id="dropboxAppKey" name="dropboxAppKey">
+    </div>
+    <div>
+      <label for="dropboxAppSecret">Dropbox App Secret:</label>
+      <input type="text" id="dropboxAppSecret" name="dropboxAppSecret">
+    </div>
+    <div>
+      <label for="dropboxRedirectUri">Extension ID:</label>
+      <input type="text" id="dropboxRedirectUri" name="dropboxRedirectUri">
+    </div>
+    <div>
+      <label for="geminiApiKey">Gemini API Key:</label>
+      <input type="text" id="geminiApiKey" name="geminiApiKey">
+    </div>
+    <div>
+      <label for="notionApiKey">Notion API Key:</label>
+      <input type="text" id="notionApiKey" name="notionApiKey">
+    </div>
+    <div>
+      <label for="notionDatabaseId">Notion Database ID:</label>
+      <input type="text" id="notionDatabaseId" name="notionDatabaseId">
+    </div>
+    <button type="submit">保存</button>
+    <span id="saveStatus"></span>
+  </form>
+  <script src="options.js"></script>
+</body>
+</html>
