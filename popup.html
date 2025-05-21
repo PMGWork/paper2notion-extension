@@ -3,23 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <title>Paper2Notion</title>
-  <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Meiryo', 'Hiragino Sans', sans-serif;
+      width: 360px;
+      margin: 0;
+      padding: 16px;
+      background-color: #f7f7fa;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    h1 {
+      color: #2d3a4a;
+      margin-bottom: 1em;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e0e0;
+      font-size: 1.5em;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #444;
+    }
+
+    input[type="file"] {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .button-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    button {
+      padding: 8px 12px;
+      border-radius: 4px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+      flex-grow: 1;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    button:disabled {
+      background: #b0bec5;
+      cursor: not-allowed;
+    }
+
+    #dropboxStatus {
+      color: #388e3c;
+      font-weight: 500;
+      font-size: 0.85em;
+    }
+
+    #progress {
+      margin-top: 12px;
+      font-size: 0.9em;
+      color: #1976d2;
+      min-height: 20px;
+    }
+
+    #result {
+      margin-top: 8px;
+      font-size: 0.9em;
+      color: #d32f2f;
+      word-break: break-all;
+      min-height: 20px;
+    }
+
+    .status-container {
+      border-top: 1px solid #e0e0e0;
+      padding-top: 12px;
+      margin-top: 12px;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+      font-size: 0.8em;
+    }
+
+    .footer a {
+      color: #1976d2;
+      text-decoration: none;
+    }
+
+    .footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <h1>Paper2Notion</h1>
-  <div>
-    <label for="pdfInput">PDFファイルを選択:</label>
-    <input type="file" id="pdfInput" accept=".pdf">
+  <div class="card">
+    <div class="button-row">
+      <button id="dropboxAuthBtn">Dropbox認証</button>
+      <span id="dropboxStatus"></span>
+    </div>
+
+    <div class="button-row">
+      <button id="sendToNotionBtn">Notionに送信</button>
+    </div>
+
+    <div class="status-container">
+      <div id="progress"></div>
+      <div id="result"></div>
+    </div>
   </div>
-  <div>
-    <button id="dropboxAuthBtn">Dropbox認証</button>
-    <span id="dropboxStatus"></span>
+
+  <div class="footer">
+    <a href="#" id="openOptions">設定</a>
   </div>
-  <div>
-    <button id="sendToNotionBtn">Notionに送信</button>
-  </div>
-  <div id="progress"></div>
-  <div id="result"></div>
-  <script src="popup.js"></script>
+
+  <script type="module" src="popup.js"></script>
 </body>
 </html>

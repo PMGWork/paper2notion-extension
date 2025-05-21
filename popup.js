@@ -1,7 +1,8 @@
+import { getCurrentTabPdf } from "./utils/pdf.js";
+
 // popup.js
 
 document.addEventListener("DOMContentLoaded", () => {
-  const pdfInput = document.getElementById("pdfInput");
   const dropboxAuthBtn = document.getElementById("dropboxAuthBtn");
   const sendToNotionBtn = document.getElementById("sendToNotionBtn");
   const progress = document.getElementById("progress");
@@ -10,15 +11,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let selectedPdfFile = null;
 
-  pdfInput.addEventListener("change", (e) => {
-    if (e.target.files.length > 0) {
-      selectedPdfFile = e.target.files[0];
-      progress.textContent = `選択中: ${selectedPdfFile.name}`;
-      result.textContent = "";
-    } else {
-      selectedPdfFile = null;
-      progress.textContent = "";
-    }
+  // ページロード時に現在のタブからPDFを取得
+  getCurrentTabPdf(result, progress).then(file => {
+    selectedPdfFile = file;
   });
 
   dropboxAuthBtn.addEventListener("click", async () => {
@@ -60,10 +55,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   sendToNotionBtn.addEventListener("click", async () => {
+    // PDFがまだ取得されていない場合、再取得を試みる
     if (!selectedPdfFile) {
-      result.textContent = "PDFファイルを選択してください。";
-      return;
+      selectedPdfFile = await getCurrentTabPdf(result, progress);
+      if (!selectedPdfFile) {
+        result.textContent = "PDFファイルが取得できませんでした。現在のタブがPDFであることを確認してください。";
+        return;
+      }
     }
+
     progress.textContent = "Notion送信処理を開始します...";
     result.textContent = "";
 
@@ -74,7 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
       "notionDatabaseId",
       "dropboxAppKey",
       "dropboxAppSecret",
-      "dropboxRedirectUri"
+      "dropboxRedirectUri",
+      "customPrompt"
     ], async (config) => {
       try {
         // 1. Geminiでメタデータ抽出
@@ -161,27 +162,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 4. Geminiで要約取得
         progress.textContent = "Geminiで論文要約中...";
-        const summaryPrompt = (
-          "#与えられた論文のPDF資料をもとに、以下の内容のみを出力してください。\n" +
-          "### 背景\n" +
-          "背景の要約文を入力する\n" +
-          "### 目的\n" +
-          "目的の要約文を入力する\n" +
-          "### 実装・実験方法（提案）\n" +
-          "実装・実験方法（提案）の要約文を入力する\n" +
-          "### 結果\n" +
-          "結果の要約文を入力する\n" +
-          "### 結論\n" +
-          "結論の要約文を入力する\n" +
-          "### 議論\n" +
-          "議論の要約文を入力する\n"
-        );
+
         let summary = "";
         try {
-          summary = await sendPrompt(selectedPdfFile, summaryPrompt);
+          summary = await sendPrompt(selectedPdfFile, config.customPrompt);
         } catch (e) {
           result.textContent = "Gemini APIから要約を取得できませんでした。" + e.message;
-          // progress.textContent = ""; // 要約取得失敗でもNotion送信は試みる場合、コメントアウト
         }
 
         // 5. Notion送信
@@ -205,5 +191,21 @@ document.addEventListener("DOMContentLoaded", () => {
         result.textContent = "エラー: " + e.message;
       }
     });
+  });
+
+  // 設定画面を開く
+  const openOptionsBtn = document.getElementById("openOptions");
+  if (openOptionsBtn) {
+    openOptionsBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      chrome.runtime.openOptionsPage();
+    });
+  }
+
+  // Dropbox認証状態を確認
+  chrome.storage.local.get("dropboxAccessToken", (items) => {
+    if (items.dropboxAccessToken) {
+      dropboxStatus.textContent = "認証済み";
+    }
   });
 });

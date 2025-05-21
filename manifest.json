@@ -6,7 +6,9 @@
   "permissions": [
     "storage",
     "identity",
-    "scripting"
+    "scripting",
+    "activeTab",
+    "tabs"
   ],
   "host_permissions": [
     "https://api.dropboxapi.com/*",

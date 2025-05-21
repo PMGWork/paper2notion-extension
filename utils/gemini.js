@@ -1,17 +1,25 @@
 // gemini.js
 // Gemini API（REST）でPDFとプロンプトを送信し、メタデータや要約を取得
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent";
+// 動的にモデル名を使用するようにする
+const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
 
 // Gemini APIキーをchrome.storage.localから取得して使う
 export async function sendPrompt(pdfFile, prompt, schema = null) {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get("geminiApiKey", async (items) => {
+    chrome.storage.local.get(["geminiApiKey", "geminiModel"], async (items) => {
       const GEMINI_API_KEY = items.geminiApiKey || "";
+      const GEMINI_MODEL = items.geminiModel && items.geminiModel.trim() !== ""
+        ? items.geminiModel
+        : "gemini-2.5-flash-preview-04-17";
+
       if (!GEMINI_API_KEY) {
         reject(new Error("Gemini APIキーが未設定です"));
         return;
       }
+
+      // APIエンドポイントをモデル名に基づいて構築
+      const apiUrl = `${GEMINI_BASE_URL}${GEMINI_MODEL}:generateContent`;
 
       // PDFファイルをbase64化
       const pdfBase64 = await fileToBase64(pdfFile);
@@ -40,7 +48,7 @@ export async function sendPrompt(pdfFile, prompt, schema = null) {
       }
 
       try {
-        const resp = await fetch(GEMINI_API_URL + `?key=${GEMINI_API_KEY}`, {
+        const resp = await fetch(apiUrl + `?key=${GEMINI_API_KEY}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(body)

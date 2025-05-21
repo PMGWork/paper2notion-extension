@@ -3,7 +3,7 @@
 
 let DROPBOX_APP_KEY = "";
 let DROPBOX_APP_SECRET = "";
-let DROPBOX_REDIRECT_URI = ""; // 拡張IDから動的生成
+let DROPBOX_REDIRECT_URI = "";
 
 function loadDropboxConfig() {
   chrome.storage.local.get(

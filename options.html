@@ -4,36 +4,186 @@
   <meta charset="UTF-8">
   <title>Paper2Notion 設定</title>
   <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', 'Meiryo', 'Hiragino Sans', sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f7f7fa;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    h1, h2 {
+      color: #2d3a4a;
+      margin-bottom: 1em;
+      padding-bottom: 8px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+
+    h2 {
+      font-size: 1.2em;
+      margin-top: 1.5em;
+    }
+
+    .card {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: #444;
+    }
+
+    input[type="text"], textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    input[type="text"]:focus, textarea:focus {
+      border-color: #1976d2;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+
+    .button-group {
+      margin-top: 1.5em;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      padding: 8px 16px;
+      border-radius: 4px;
+      background: #1976d2;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #1565c0;
+    }
+
+    #saveStatus {
+      color: #388e3c;
+      font-weight: 500;
+    }
+
+    .hint {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 4px;
+    }
+
+    .prompt-controls {
+      position: relative;
+    }
+
+    .secondary-button {
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      background: #f0f0f0;
+      color: #444;
+      border: 1px solid #ddd;
+      padding: 4px 8px;
+      font-size: 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .secondary-button:hover {
+      background: #e0e0e0;
+      border-color: #bbb;
+    }
+  </style>
 </head>
 <body>
   <h1>Paper2Notion 設定</h1>
   <form id="optionsForm">
-    <div>
-      <label for="dropboxAppKey">Dropbox App Key:</label>
-      <input type="text" id="dropboxAppKey" name="dropboxAppKey">
+    <div class="card">
+      <h2>Extension設定</h2>
+      <div class="form-group">
+        <label for="dropboxRedirectUri">Extension ID</label>
+        <input type="text" id="dropboxRedirectUri" name="dropboxRedirectUri">
+        <div class="hint">Chrome拡張機能のIDを入力してください</div>
+      </div>
     </div>
-    <div>
-      <label for="dropboxAppSecret">Dropbox App Secret:</label>
-      <input type="text" id="dropboxAppSecret" name="dropboxAppSecret">
+
+    <div class="card">
+      <h2>Gemini設定</h2>
+      <div class="form-group">
+        <label for="geminiApiKey">Gemini API Key</label>
+        <input type="text" id="geminiApiKey" name="geminiApiKey">
+      </div>
+      <div class="form-group">
+        <label for="geminiModel">Gemini モデル</label>
+        <input type="text" id="geminiModel" name="geminiModel" placeholder="例: gemini-2.5-flash-preview-04-17">
+        <div class="hint">使用するGeminiのモデル名を入力してください。</div>
+      </div>
+      <div class="form-group">
+        <label for="customPrompt">カスタムプロンプト</label>
+        <div class="prompt-controls">
+          <textarea id="customPrompt" name="customPrompt" placeholder="論文の要約や特定の情報抽出のためのプロンプトを入力してください"></textarea>
+          <button type="button" id="resetPrompt" class="secondary-button">デフォルトに戻す</button>
+        </div>
+        <div class="hint">論文の要約スタイルをプロンプトとして指定できます。</div>
+      </div>
     </div>
-    <div>
-      <label for="dropboxRedirectUri">Extension ID:</label>
-      <input type="text" id="dropboxRedirectUri" name="dropboxRedirectUri">
+
+    <div class="card">
+      <h2>Notion設定</h2>
+      <div class="form-group">
+        <label for="notionApiKey">Notion API Key</label>
+        <input type="text" id="notionApiKey" name="notionApiKey">
+      </div>
+      <div class="form-group">
+        <label for="notionDatabaseId">Notion Database ID</label>
+        <input type="text" id="notionDatabaseId" name="notionDatabaseId">
+      </div>
     </div>
-    <div>
-      <label for="geminiApiKey">Gemini API Key:</label>
-      <input type="text" id="geminiApiKey" name="geminiApiKey">
+
+    <div class="card">
+      <h2>Dropbox設定</h2>
+      <div class="form-group">
+        <label for="dropboxAppKey">Dropbox App Key</label>
+        <input type="text" id="dropboxAppKey" name="dropboxAppKey">
+      </div>
+      <div class="form-group">
+        <label for="dropboxAppSecret">Dropbox App Secret</label>
+        <input type="text" id="dropboxAppSecret" name="dropboxAppSecret">
+      </div>
     </div>
-    <div>
-      <label for="notionApiKey">Notion API Key:</label>
-      <input type="text" id="notionApiKey" name="notionApiKey">
+
+    <div class="button-group">
+      <button type="submit">設定を保存</button>
+      <span id="saveStatus"></span>
     </div>
-    <div>
-      <label for="notionDatabaseId">Notion Database ID:</label>
-      <input type="text" id="notionDatabaseId" name="notionDatabaseId">
-    </div>
-    <button type="submit">保存</button>
-    <span id="saveStatus"></span>
   </form>
   <script src="options.js"></script>
 </body>
