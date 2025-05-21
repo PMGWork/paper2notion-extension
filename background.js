@@ -27,9 +27,16 @@ let processingState = {
 };
 
 // 処理状態を更新する関数
-function updateProcessingState(update) {
+async function updateProcessingState(update) {
   const prevState = { ...processingState };
   processingState = { ...processingState, ...update };
+
+  // 処理状態をchrome.storage.localに保存
+  try {
+    await chrome.storage.local.set({ processingState: processingState });
+  } catch (e) {
+    console.error('処理状態の保存に失敗しました:', e);
+  }
 
   // 処理状態が変わった場合、ツールバーアイコンを更新
   if (prevState.isProcessing !== processingState.isProcessing) {
@@ -85,7 +92,7 @@ function updateProcessingState(update) {
     chrome.notifications.create({
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icon.png'),
-      title: 'Paper2Notion - 完了',
+      title: 'Paper2Notion',
       message: '処理が完了しました',
       buttons: [
         { title: 'Notionページを開く' }
@@ -268,7 +275,22 @@ async function processAndSendToNotion(pdfFile) {
 // Service Worker初期化
 chrome.runtime.onInstalled.addListener(() => {
   console.log('Paper2Notion Service Worker がインストールされました');
+  // インストール時にprocessingStateをリセット（または初期化）
+  chrome.storage.local.set({
+    processingState: {
+      isProcessing: false,
+      currentStep: '',
+      progress: 0,
+      result: '',
+      error: null,
+      notionPageUrl: null,
+      pdfFileName: null
+    }
+  }).catch(e => console.error('初期状態の保存に失敗しました:', e));
 });
+
+// Service Workerが起動したときに状態を読み込む必要はない
+// getProcessingStateメッセージが来たときにストレージから読み込む
 
 // メッセージリスナー
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -310,8 +332,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.type === 'getProcessingState') {
-    sendResponse({ state: processingState });
-    return false;
+    // 最新のprocessingStateを返す
+    // Service Workerが停止して再起動した場合に備え、ストレージから最新の状態を読み込む
+    chrome.storage.local.get('processingState', (data) => {
+      processingState = data.processingState || processingState;
+      sendResponse({ state: processingState });
+    });
+    return true; // 非同期応答のためtrueを返す
   }
 
   if (message.type === 'getCurrentTabPdf') {
