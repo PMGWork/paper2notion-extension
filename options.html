@@ -121,38 +121,46 @@
       background: #e0e0e0;
       border-color: #bbb;
     }
+
+    .note {
+      font-size: 0.9em;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .success {
+      color: green;
+      margin-top: 10px;
+    }
+
+    .error {
+      color: red;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
   <h1>Paper2Notion 設定</h1>
   <form id="optionsForm">
     <div class="card">
-      <h2>Extension設定</h2>
-      <div class="form-group">
-        <label for="dropboxRedirectUri">Extension ID</label>
-        <input type="text" id="dropboxRedirectUri" name="dropboxRedirectUri">
-        <div class="hint">Chrome拡張機能のIDを入力してください</div>
-      </div>
-    </div>
-
-    <div class="card">
       <h2>Gemini設定</h2>
       <div class="form-group">
         <label for="geminiApiKey">Gemini API Key</label>
         <input type="text" id="geminiApiKey" name="geminiApiKey">
+        <div class="note">Google AI Studio から取得できます: <a href="https://makersuite.google.com/app/apikey" target="_blank">https://makersuite.google.com/app/apikey</a></div>
       </div>
       <div class="form-group">
         <label for="geminiModel">Gemini モデル</label>
-        <input type="text" id="geminiModel" name="geminiModel" placeholder="例: gemini-2.5-flash-preview-04-17">
+        <input type="text" id="geminiModel" name="geminiModel" placeholder="例: gemini-2.5-flash-preview-05-20">
         <div class="hint">使用するGeminiのモデル名を入力してください。</div>
       </div>
       <div class="form-group">
-        <label for="customPrompt">カスタムプロンプト</label>
+        <label for="customPrompt">カスタムプロンプト（論文要約用）</label>
         <div class="prompt-controls">
           <textarea id="customPrompt" name="customPrompt" placeholder="論文の要約や特定の情報抽出のためのプロンプトを入力してください"></textarea>
           <button type="button" id="resetPrompt" class="secondary-button">デフォルトに戻す</button>
         </div>
-        <div class="hint">論文の要約スタイルをプロンプトとして指定できます。</div>
+        <div class="hint">論文の要約スタイルをプロンプトとして指定できます。空白の場合はデフォルトプロンプトが使用されます。</div>
       </div>
     </div>
 
@@ -161,22 +169,17 @@
       <div class="form-group">
         <label for="notionApiKey">Notion API Key</label>
         <input type="text" id="notionApiKey" name="notionApiKey">
+        <div class="note">Notion Integration から取得できます: <a href="https://www.notion.so/my-integrations" target="_blank">https://www.notion.so/my-integrations</a></div>
       </div>
       <div class="form-group">
         <label for="notionDatabaseId">Notion Database ID</label>
         <input type="text" id="notionDatabaseId" name="notionDatabaseId">
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Dropbox設定</h2>
-      <div class="form-group">
-        <label for="dropboxAppKey">Dropbox App Key</label>
-        <input type="text" id="dropboxAppKey" name="dropboxAppKey">
+        <div class="note">NotionデータベースのURLから取得できます: https://www.notion.so/workspace/[ここがDatabase ID]?v=...</div>
       </div>
       <div class="form-group">
-        <label for="dropboxAppSecret">Dropbox App Secret</label>
-        <input type="text" id="dropboxAppSecret" name="dropboxAppSecret">
+        <label for="notionApiVersion">Notion API バージョン</label>
+        <input type="text" id="notionApiVersion" name="notionApiVersion" placeholder="例: 2022-06-28">
+        <div class="hint">通常は変更する必要はありません</div>
       </div>
     </div>
 
@@ -185,6 +188,6 @@
       <span id="saveStatus"></span>
     </div>
   </form>
-  <script src="options.js"></script>
+  <script src="options.js" type="module"></script>
 </body>
 </html>

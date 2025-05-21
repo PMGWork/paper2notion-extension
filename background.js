@@ -6,10 +6,6 @@ chrome.runtime.onInstalled.addListener(() => {
 
 // popupやcontent scriptからのメッセージ受信
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "DROPBOX_AUTH") {
-    // TODO: Dropbox OAuth認証フロー開始
-    sendResponse({ status: "not_implemented" });
-  }
-  // 他のAPI連携もここで処理予定
+  // API連携など必要に応じて処理を実装
   return true; // 非同期応答を許可
 });

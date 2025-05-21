@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Paper2Notion",
   "version": "0.1.0",
-  "description": "論文PDFからメタデータ抽出・要約・Dropbox/Notion連携を行うChrome拡張",
+  "description": "論文PDFからメタデータ抽出・要約・Notion連携を行うChrome拡張",
   "permissions": [
     "storage",
     "identity",
@@ -11,8 +11,6 @@
     "tabs"
   ],
   "host_permissions": [
-    "https://api.dropboxapi.com/*",
-    "https://content.dropboxapi.com/*",
     "https://api.notion.com/*",
     "https://api.crossref.org/*",
     "http://export.arxiv.org/*"

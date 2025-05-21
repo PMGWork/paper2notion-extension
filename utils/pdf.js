@@ -1,4 +1,4 @@
-// utils/pdf.js
+// pdf.js
 
 /**
  * 現在アクティブなタブからPDFファイルを取得し、Fileオブジェクトとして返す
@@ -16,6 +16,13 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
       return null;
     }
 
+    // アクセスできないURLスキームをチェック
+    const inaccessibleSchemes = ['chrome:', 'chrome-extension:', 'file:', 'data:', 'about:', 'javascript:'];
+    if (inaccessibleSchemes.some(scheme => activeTab.url.startsWith(scheme))) {
+      if (resultEl) resultEl.textContent = `このページからはPDFを取得できません（${activeTab.url.split(':')[0]}スキーム）`;
+      return null;
+    }
+
     // URLがPDFかどうかをチェック
     if (!activeTab.url.toLowerCase().endsWith('.pdf')) {
       try {
@@ -26,7 +33,7 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
           return null;
         }
       } catch (e) {
-        if (resultEl) resultEl.textContent = "タブのコンテンツタイプを確認できません";
+        if (resultEl) resultEl.textContent = `タブのコンテンツタイプを確認できません: ${e.message}`;
         return null;
       }
     }

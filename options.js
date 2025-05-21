@@ -8,13 +8,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 保存済み値を復元
   restoreOptions((options) => {
-    form.dropboxAppKey.value = options.dropboxAppKey;
-    form.dropboxAppSecret.value = options.dropboxAppSecret;
-    form.dropboxRedirectUri.value = options.dropboxRedirectUri;
     form.geminiApiKey.value = options.geminiApiKey;
     form.geminiModel.value = options.geminiModel;
     form.notionApiKey.value = options.notionApiKey;
     form.notionDatabaseId.value = options.notionDatabaseId;
+    form.notionApiVersion.value = options.notionApiVersion;
     form.customPrompt.value = options.customPrompt;
   });
 
@@ -22,13 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
     const options = {
-      dropboxAppKey: form.dropboxAppKey.value,
-      dropboxAppSecret: form.dropboxAppSecret.value,
-      dropboxRedirectUri: form.dropboxRedirectUri.value,
       geminiApiKey: form.geminiApiKey.value,
       geminiModel: form.geminiModel.value,
       notionApiKey: form.notionApiKey.value,
       notionDatabaseId: form.notionDatabaseId.value,
+      notionApiVersion: form.notionApiVersion.value,
       customPrompt: form.customPrompt.value
     };
     saveOptions(options, () => {

@@ -1,24 +1,71 @@
 // notion.js
 // Notion APIで論文情報を送信
 
-export async function sendToNotion(meta, summary, pdfUrl = null, pdfName = null, notionApiKey, notionDatabaseId) {
+// Notionに直接ファイルをアップロードする関数
+export async function uploadFileToNotion(fileData, fileName, contentType, notionApiKey, notionApiVersion = "2022-06-28") {
+  if (!notionApiKey) {
+    return { success: false, message: "Notion APIキーが未設定です" };
+  }
+
+  try {
+    // Step 1: ファイルアップロードオブジェクトを作成
+    const createUploadResp = await fetch("https://api.notion.com/v1/file_uploads", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${notionApiKey}`,
+        "Notion-Version": notionApiVersion,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({})
+    });
+
+    if (!createUploadResp.ok) {
+      const error = await createUploadResp.text();
+      return { success: false, message: `ファイルアップロード準備エラー: ${createUploadResp.status} - ${error}` };
+    }
+
+    const uploadData = await createUploadResp.json();
+    const fileUploadId = uploadData.id;
+    const uploadUrl = uploadData.upload_url;
+
+    // Step 2: 実際のファイルをアップロード
+    const formData = new FormData();
+    // Blobとしてファイルデータを追加（fileDataがArrayBufferの場合）
+    const blob = new Blob([fileData], { type: contentType });
+    formData.append('file', blob, fileName);
+
+    const uploadResp = await fetch(uploadUrl, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${notionApiKey}`,
+        "Notion-Version": notionApiVersion
+      },
+      body: formData
+    });
+
+    if (!uploadResp.ok) {
+      const error = await uploadResp.text();
+      return { success: false, message: `ファイルアップロードエラー: ${uploadResp.status} - ${error}` };
+    }
+
+    // アップロードが成功した場合、fileUploadIdを返す
+    return {
+      success: true,
+      fileUploadId: fileUploadId,
+      message: "ファイルのアップロードに成功しました"
+    };
+  } catch (e) {
+    return { success: false, message: `ファイルアップロード例外: ${e.message}` };
+  }
+}
+
+export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfName = null, notionApiKey, notionDatabaseId, notionApiVersion = "2022-06-28") {
   if (!notionApiKey || !notionDatabaseId) {
     return { success: false, message: "Notion APIキーまたはデータベースIDが未設定です" };
   }
 
-  // ブロック構造
   const children = [];
-  if (pdfUrl) {
-    children.push({
-      object: "block",
-      type: "file",
-      file: {
-        caption: [{ type: "text", text: { content: `Uploaded PDF: ${pdfName}` } }],
-        type: "external",
-        external: { url: pdfUrl }
-      }
-    });
-  }
+
   if (summary) {
     const lines = summary.split("\n");
     let currentParagraph = [];
@@ -57,7 +104,6 @@ export async function sendToNotion(meta, summary, pdfUrl = null, pdfName = null,
     }
   }
 
-  // プロパティ
   const authorsList = (meta.authors || "").split(",").map(a => a.trim()).filter(Boolean);
   const journalsList = (meta.journals || "").split(",").map(j => j.trim()).filter(Boolean);
 
@@ -82,13 +128,15 @@ export async function sendToNotion(meta, summary, pdfUrl = null, pdfName = null,
     }
   };
 
-  if (pdfUrl) {
+  if (pdfFileUploadId && pdfName) {
     properties["PDF"] = {
       files: [
         {
-          type: "external",
-          name: pdfName || "PDF Link",
-          external: { url: pdfUrl }
+          type: "file_upload",
+          name: pdfName,
+          file_upload: {
+            id: pdfFileUploadId
+          }
         }
       ]
     };
@@ -104,7 +152,7 @@ export async function sendToNotion(meta, summary, pdfUrl = null, pdfName = null,
     method: "POST",
     headers: {
       "Authorization": `Bearer ${notionApiKey}`,
-      "Notion-Version": "2022-06-28",
+      "Notion-Version": notionApiVersion,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(data)

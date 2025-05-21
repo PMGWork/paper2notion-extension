@@ -11,7 +11,7 @@ export async function sendPrompt(pdfFile, prompt, schema = null) {
       const GEMINI_API_KEY = items.geminiApiKey || "";
       const GEMINI_MODEL = items.geminiModel && items.geminiModel.trim() !== ""
         ? items.geminiModel
-        : "gemini-2.5-flash-preview-04-17";
+        : "gemini-2.5-flash-preview-05-20";
 
       if (!GEMINI_API_KEY) {
         reject(new Error("Gemini APIキーが未設定です"));
@@ -21,22 +21,26 @@ export async function sendPrompt(pdfFile, prompt, schema = null) {
       // APIエンドポイントをモデル名に基づいて構築
       const apiUrl = `${GEMINI_BASE_URL}${GEMINI_MODEL}:generateContent`;
 
-      // PDFファイルをbase64化
-      const pdfBase64 = await fileToBase64(pdfFile);
+      const parts = [{ text: prompt }];
+
+      if (pdfFile) {
+        // PDFファイルをbase64化
+        const pdfBase64 = await fileToBase64(pdfFile);
+        if (pdfBase64) { // pdfBase64が空でないことを確認
+          parts.unshift({ // 配列の先頭に追加
+            inline_data: {
+              mime_type: "application/pdf",
+              data: pdfBase64
+            }
+          });
+        }
+      }
 
       // Gemini APIのリクエストボディ例
       const body = {
         contents: [
           {
-            parts: [
-              {
-                inline_data: {
-                  mime_type: "application/pdf",
-                  data: pdfBase64
-                }
-              },
-              { text: prompt }
-            ]
+            parts: parts
           }
         ]
       };
@@ -91,6 +95,11 @@ export async function sendPrompt(pdfFile, prompt, schema = null) {
 // ファイル→base64変換
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
+    console.log("fileToBase64 input:", file, "type:", typeof file, "instanceof Blob:", file instanceof Blob);
+    if (!file) { // fileがnullまたはundefinedの場合
+      resolve(""); // 空文字列を返す
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
       const base64 = reader.result.split(",")[1];
