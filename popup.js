@@ -3,7 +3,9 @@ import {
   META_EXTRACTION_PROMPT,
   PAPER_META_SCHEMA,
   ABSTRACT_TRANSLATION_PROMPT,
-  DEFAULT_SUMMARY_PROMPT
+  DEFAULT_SUMMARY_PROMPT,
+  READABLE_META_EXTRACTION_PROMPT,
+  READABLE_SUMMARY_PROMPT
 } from "./utils/prompts.js";
 
 // popup.js
@@ -33,20 +35,26 @@ document.addEventListener("DOMContentLoaded", () => {
     progress.textContent = "Notion送信処理を開始します...";
     result.textContent = "";
 
+    // PDFがReadable形式かどうかを判定（ファイル名が"al-"で始まる場合）
+    const isReadableFormat = selectedPdfFile.name.startsWith("al-");
+
+    // 使用するプロンプトを選択
+    const metaExtractionPrompt = isReadableFormat ? READABLE_META_EXTRACTION_PROMPT : META_EXTRACTION_PROMPT;
+    const summaryPromptDefault = isReadableFormat ? READABLE_SUMMARY_PROMPT : DEFAULT_SUMMARY_PROMPT;
+
     // 設定値取得
     chrome.storage.local.get([
       "geminiApiKey",
       "notionApiKey",
       "notionDatabaseId",
-      "customPrompt",
-      "notionApiVersion"
+      "customPrompt"
     ], async (config) => {
       try {
         // 1. メタデータ抽出: Geminiでメタデータ抽出
         progress.textContent = "Geminiでメタデータ抽出中...";
         const { sendPrompt } = await import("./utils/gemini.js");
 
-        let metaRaw = await sendPrompt(selectedPdfFile, META_EXTRACTION_PROMPT, PAPER_META_SCHEMA);
+        let metaRaw = await sendPrompt(selectedPdfFile, metaExtractionPrompt, PAPER_META_SCHEMA);
         let meta = {};
         try {
           if (typeof metaRaw === "string") {
@@ -110,7 +118,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let summary = "";
         try {
           // カスタムプロンプトがあればそれを使用、なければデフォルトプロンプトを使用
-          const summaryPrompt = config.customPrompt || DEFAULT_SUMMARY_PROMPT;
+          const summaryPrompt = config.customPrompt || summaryPromptDefault;
           summary = await sendPrompt(selectedPdfFile, summaryPrompt);
           progress.textContent = "論文内容の要約が完了しました";
         } catch (e) {
@@ -134,7 +142,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let pdfFileUploadId = null;
         if (config.notionApiKey) {
           try {
-            const uploadResult = await uploadFileToNotion(pdfBytes, pdfName, pdfContentType, config.notionApiKey, config.notionApiVersion);
+            const uploadResult = await uploadFileToNotion(pdfBytes, pdfName, pdfContentType, config.notionApiKey);
             if (!uploadResult.success) {
               result.textContent = "NotionへのPDFアップロードに失敗しました: " + uploadResult.message;
               progress.textContent = "";
@@ -155,7 +163,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         progress.textContent = "メタデータと要約をNotionに送信中...";
         const { sendToNotion } = await import("./utils/notion.js");
-        const notionResult = await sendToNotion(meta, summary, pdfFileUploadId, pdfName, config.notionApiKey, config.notionDatabaseId, config.notionApiVersion);
+        const notionResult = await sendToNotion(meta, summary, pdfFileUploadId, pdfName, config.notionApiKey, config.notionDatabaseId);
 
         if (notionResult.success) {
           progress.textContent = "";

@@ -1,4 +1,5 @@
 // optionsStorage.js
+// オプションの保存と取得を行う
 
 import { DEFAULT_SUMMARY_PROMPT } from "./prompts.js";
 
@@ -7,18 +8,18 @@ const OPTION_KEYS = [
   "geminiModel",
   "notionApiKey",
   "notionDatabaseId",
-  "notionApiVersion",
-  "customPrompt"
+  "customPrompt",
+  "useNonReasoning"
 ];
 
 // オプションの初期値
 const defaultOptions = {
   geminiApiKey: "",
-  geminiModel: "gemini-pro-vision",
+  geminiModel: "gemini-2.5-flash-preview-05-20",
   notionApiKey: "",
   notionDatabaseId: "",
-  notionApiVersion: "2022-06-28",
-  customPrompt: DEFAULT_SUMMARY_PROMPT
+  customPrompt: DEFAULT_SUMMARY_PROMPT,
+  useNonReasoning: true
 };
 
 // 保存されたオプションを取得

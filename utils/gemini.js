@@ -7,11 +7,12 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models
 // Gemini APIキーをchrome.storage.localから取得して使う
 export async function sendPrompt(pdfFile, prompt, schema = null) {
   return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["geminiApiKey", "geminiModel"], async (items) => {
+    chrome.storage.local.get(["geminiApiKey", "geminiModel", "useNonReasoning"], async (items) => {
       const GEMINI_API_KEY = items.geminiApiKey || "";
       const GEMINI_MODEL = items.geminiModel && items.geminiModel.trim() !== ""
         ? items.geminiModel
         : "gemini-2.5-flash-preview-05-20";
+      const USE_NON_REASONING = items.useNonReasoning === true;
 
       if (!GEMINI_API_KEY) {
         reject(new Error("Gemini APIキーが未設定です"));
@@ -42,12 +43,21 @@ export async function sendPrompt(pdfFile, prompt, schema = null) {
           {
             parts: parts
           }
-        ]
+        ],
+        generationConfig: {}
       };
+
+      // スキーマが指定されている場合は追加
       if (schema) {
-        body.generationConfig = {
-          responseMimeType: "application/json",
-          responseSchema: schema
+        body.generationConfig.responseMimeType = "application/json";
+        body.generationConfig.responseSchema = schema;
+      }
+
+      // non-reasoningの設定を追加
+      // Gemini 2.5 Flashモデルの場合のみ適用
+      if (GEMINI_MODEL.includes("gemini-2.5-flash") && USE_NON_REASONING) {
+        body.generationConfig.thinkingConfig = {
+          thinkingBudget: 0 // 0に設定すると推論を無効化
         };
       }
 

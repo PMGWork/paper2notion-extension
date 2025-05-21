@@ -46,7 +46,7 @@
       color: #444;
     }
 
-    input[type="text"], textarea {
+    input[type="text"], textarea, select {
       width: 100%;
       padding: 10px;
       border: 1px solid #ddd;
@@ -55,15 +55,60 @@
       font-size: 14px;
     }
 
+    input[readonly] {
+      background-color: #f5f5f5;
+      color: #666;
+      cursor: not-allowed;
+    }
+
+    select {
+      background-color: white;
+      cursor: pointer;
+    }
+
     textarea {
       min-height: 120px;
       resize: vertical;
     }
 
-    input[type="text"]:focus, textarea:focus {
+    input[type="text"]:focus:not([readonly]), textarea:focus, select:focus {
       border-color: #1976d2;
       outline: none;
       box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      margin: 0 0 15px 0;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      margin-right: 8px;
+    }
+
+    .checkbox-wrapper {
+      margin-bottom: 10px;
+    }
+
+    .non-reasoning {
+      margin: 0px;
+    }
+
+    .hint {
+      font-size: 0.85em;
+      color: #666;
+      margin: 0 0 10px 24px;
+    }
+
+    .model-description {
+      font-size: 0.85em;
+      color: #666;
+      margin-top: 8px;
+    }
+
+    .hidden {
+      display: none;
     }
 
     .button-group {
@@ -91,12 +136,6 @@
     #saveStatus {
       color: #388e3c;
       font-weight: 500;
-    }
-
-    .hint {
-      font-size: 0.85em;
-      color: #666;
-      margin-top: 4px;
     }
 
     .prompt-controls {
@@ -147,13 +186,25 @@
       <div class="form-group">
         <label for="geminiApiKey">Gemini API Key</label>
         <input type="text" id="geminiApiKey" name="geminiApiKey">
-        <div class="note">Google AI Studio から取得できます: <a href="https://makersuite.google.com/app/apikey" target="_blank">https://makersuite.google.com/app/apikey</a></div>
       </div>
+
       <div class="form-group">
         <label for="geminiModel">Gemini モデル</label>
-        <input type="text" id="geminiModel" name="geminiModel" placeholder="例: gemini-2.5-flash-preview-05-20">
-        <div class="hint">使用するGeminiのモデル名を入力してください。</div>
+        <select id="geminiModel" name="geminiModel">
+          <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro</option>
+          <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash</option>
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option>
+        </select>
       </div>
+
+      <div id="nonReasoningOption" class="checkbox-wrapper hidden">
+        <div class="checkbox-group">
+          <input type="checkbox" id="useNonReasoning" name="useNonReasoning">
+          <label for="useNonReasoning" class="non-reasoning">Non-reasoningモードを使用する</label>
+        </div>
+      </div>
+
       <div class="form-group">
         <label for="customPrompt">カスタムプロンプト（論文要約用）</label>
         <div class="prompt-controls">
@@ -169,17 +220,10 @@
       <div class="form-group">
         <label for="notionApiKey">Notion API Key</label>
         <input type="text" id="notionApiKey" name="notionApiKey">
-        <div class="note">Notion Integration から取得できます: <a href="https://www.notion.so/my-integrations" target="_blank">https://www.notion.so/my-integrations</a></div>
       </div>
       <div class="form-group">
         <label for="notionDatabaseId">Notion Database ID</label>
         <input type="text" id="notionDatabaseId" name="notionDatabaseId">
-        <div class="note">NotionデータベースのURLから取得できます: https://www.notion.so/workspace/[ここがDatabase ID]?v=...</div>
-      </div>
-      <div class="form-group">
-        <label for="notionApiVersion">Notion API バージョン</label>
-        <input type="text" id="notionApiVersion" name="notionApiVersion" placeholder="例: 2022-06-28">
-        <div class="hint">通常は変更する必要はありません</div>
       </div>
     </div>
 

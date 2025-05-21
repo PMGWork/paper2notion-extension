@@ -2,7 +2,9 @@
 // Notion APIで論文情報を送信
 
 // Notionに直接ファイルをアップロードする関数
-export async function uploadFileToNotion(fileData, fileName, contentType, notionApiKey, notionApiVersion = "2022-06-28") {
+export async function uploadFileToNotion(fileData, fileName, contentType, notionApiKey) {
+  const notionApiVersion = "2022-06-28";
+
   if (!notionApiKey) {
     return { success: false, message: "Notion APIキーが未設定です" };
   }
@@ -59,7 +61,9 @@ export async function uploadFileToNotion(fileData, fileName, contentType, notion
   }
 }
 
-export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfName = null, notionApiKey, notionDatabaseId, notionApiVersion = "2022-06-28") {
+export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfName = null, notionApiKey, notionDatabaseId) {
+  const notionApiVersion = "2022-06-28";
+
   if (!notionApiKey || !notionDatabaseId) {
     return { success: false, message: "Notion APIキーまたはデータベースIDが未設定です" };
   }
