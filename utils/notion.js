@@ -4,12 +4,30 @@
 // Notionに直接ファイルをアップロードする関数
 export async function uploadFileToNotion(fileData, fileName, contentType, notionApiKey) {
   const notionApiVersion = "2022-06-28";
+  const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
   if (!notionApiKey) {
     return { success: false, message: "Notion APIキーが未設定です" };
   }
 
   try {
+    // ファイルサイズを確認
+    const fileSize = fileData.byteLength;
+    console.log(`ファイルサイズ: ${fileSize} バイト (${(fileSize / (1024 * 1024)).toFixed(2)} MB)`);
+
+    // 20MB超の場合はエラーを返す
+    if (fileSize > MAX_FILE_SIZE) {
+      console.warn(`ファイルサイズが20MBを超えています (${(fileSize / (1024 * 1024)).toFixed(2)} MB)。Notionは20MB以下のファイルのみ対応しています。`);
+      return {
+        success: false,
+        skipFile: true, // ファイルのスキップを示すフラグ
+        message: `ファイルサイズが20MBを超えています (${(fileSize / (1024 * 1024)).toFixed(2)} MB)。Notionは20MB以下のファイルのみ対応しています。メタデータのみ送信します。`
+      };
+    }
+
+    // 20MB以下の場合は通常のアップロード処理
+    console.log("通常のアップロード処理を実行します");
+
     // Step 1: ファイルアップロードオブジェクトを作成
     const createUploadResp = await fetch("https://api.notion.com/v1/file_uploads", {
       method: "POST",
@@ -18,7 +36,7 @@ export async function uploadFileToNotion(fileData, fileName, contentType, notion
         "Notion-Version": notionApiVersion,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({ name: fileName, type: contentType })
     });
 
     if (!createUploadResp.ok) {
