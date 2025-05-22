@@ -42,7 +42,7 @@ async function getArxivMetadata(arxivDoi) {
   return {
     title,
     authors,
-    journals: "arXiv",
+    journal: "arXiv",
     year,
     doi: arxivUrl,
     abstract: summary
@@ -54,12 +54,12 @@ async function getCrossrefMetadata(doi) {
   const resp = await fetch(url);
   if (!resp.ok) return null;
   const data = (await resp.json()).message;
-  const journals = (data["container-title"] && data["container-title"][0]) || "";
+  const journal = (data["container-title"] && data["container-title"][0]) || "";
   const title = (data["title"] && data["title"][0]) || "";
   return {
     title,
     authors: (data.author || []).map(a => `${a.given || ""} ${a.family || ""}`).join(", "),
-    journals,
+    journal,
     year: (data["published-print"]?.["date-parts"]?.[0]?.[0]) || (data["published-online"]?.["date-parts"]?.[0]?.[0]) || null,
     doi: data.DOI || "",
     abstract: data.abstract || ""

@@ -7,7 +7,7 @@ export const PAPER_META_SCHEMA = {
   properties: {
     title: { type: "STRING" },
     authors: { type: "STRING" },
-    journals: { type: "STRING" },
+    journal: { type: "STRING" },
     year: { type: "INTEGER" },
     abstract: { type: "STRING" },
     isJapanese: { type: "BOOLEAN" }
@@ -16,10 +16,12 @@ export const PAPER_META_SCHEMA = {
 
 // メタデータ抽出用のプロンプト（一般的なPDF用）
 export const META_EXTRACTION_PROMPT = `
-この論文PDFから以下の情報を取得し、JSON形式で出力してください。各項目には以下の内容を含めてください。
+この論文PDFから以下の情報を取得し、JSON形式で出力してください。
+日本語の論文の場合は、日本語の論文タイトル、著者名、ジャーナル、アブストラクトを優先して取得してください。
+各項目には以下の内容を含めてください。
 - 'title': 論文の正確なタイトル
-- 'authors': 全ての著者の氏名をカンマ区切りで列挙
-- 'journals': 掲載されているジャーナルまたは会議名
+- 'authors': 全ての著者の氏名をカンマ区切りで列挙、姓と名の間には半角スペースを入れる
+- 'journal': 掲載されているジャーナルまたは会議名
 - 'year': 出版年（西暦）
 - 'abstract': アブストラクトの全文
 - 'isJapanese': 論文が日本語で記述されている場合は true、そうでない場合は false
@@ -31,10 +33,10 @@ export const READABLE_META_EXTRACTION_PROMPT = `
 以下の情報を、主に偶数ページの英語原文から取得し、JSON形式で出力してください。各項目には以下の内容を含めてください。
 - 'title': 論文の正確なタイトル
 - 'authors': 全ての著者の氏名をカンマ区切りで列挙
-- 'journals': 掲載されているジャーナルまたは会議名
+- 'journal': 掲載されているジャーナルまたは会議名
 - 'year': 出版年（西暦）
 - 'abstract': アブストラクトの全文（英語原文）
-- 'isJapanese': 論文が日本語で記述されている場合は true、そうでない場合は false
+- 'isJapanese': falseを出力してください
 `;
 
 // アブストラクト翻訳用のプロンプト

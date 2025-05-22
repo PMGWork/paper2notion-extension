@@ -127,7 +127,9 @@ export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfNam
   }
 
   const authorsList = (meta.authors || "").split(",").map(a => a.trim()).filter(Boolean);
-  const journalsList = (meta.journals || "").split(",").map(j => j.trim()).filter(Boolean);
+  // journalを分割せずに1つの項目として扱う
+  // カンマ（,）を全角カンマ（，）に変換
+  const journal = (meta.journal || "").replace(/,/g, "，");
 
   const properties = {
     "タイトル": {
@@ -140,7 +142,7 @@ export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfNam
       number: typeof meta.year === "number" ? meta.year : null
     },
     "ジャーナル": {
-      multi_select: journalsList.map(j => ({ name: j }))
+      select: journal ? { name: journal } : null
     },
     "DOI": {
       url: meta.doi || null

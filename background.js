@@ -218,9 +218,9 @@ async function processAndSendToNotion(pdfFile) {
     const summary = await sendPrompt(pdfFile, summaryPrompt);
     updateProcessingState({ currentStep: '論文内容の要約が完了しました', progress: 80 });
 
-    // journals（ジャーナル名）が100文字を超える場合は切り詰め
-    if (meta.journals && typeof meta.journals === "string" && meta.journals.length > 100) {
-      meta.journals = meta.journals.slice(0, 100);
+    // journal（ジャーナル名）が100文字を超える場合は切り詰め
+    if (meta.journal && typeof meta.journal === "string" && meta.journal.length > 100) {
+      meta.journal = meta.journal.slice(0, 100);
     }
 
     // 5. Notionへの送信
