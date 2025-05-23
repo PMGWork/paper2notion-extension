@@ -67,7 +67,7 @@ async function getCrossrefMetadata(doi) {
 }
 
 // 類似度判定（簡易版）
-export function isSimilar(a, b, threshold = 0.8) {
+export function isSimilar(a, b, threshold = 0.9) {
   if (!a || !b) return false;
   // レーベンシュタイン距離やSequenceMatcherの代用として単純な一致率
   const minLen = Math.min(a.length, b.length);

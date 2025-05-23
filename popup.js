@@ -218,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
               </svg>
-              <div>PDFファイルが見つかりました（${response.file.name}）</div>
+              <div>処理を開始しました（${selectedPdfFile.name}）</div>
             </div>
           `;
           result.className = "text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 min-h-[1.5rem]";

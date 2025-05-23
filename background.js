@@ -184,7 +184,7 @@ async function processAndSendToNotion(pdfFile) {
     let metaCrossref = null;
     if (doi) {
       metaCrossref = await getMetadataFromDoi(doi);
-      if (metaCrossref && isSimilar(meta.title, metaCrossref.title, 0.8)) {
+      if (metaCrossref && isSimilar(meta.title, metaCrossref.title, 0.9)) {
         if (!metaCrossref.abstract && meta.abstract) {
           metaCrossref.abstract = meta.abstract;
         }
