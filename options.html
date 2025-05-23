@@ -3,194 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <title>Paper2Notion 設定</title>
-  <link rel="stylesheet" href="popup.css">
-  <style>
-    body {
-      font-family: 'Segoe UI', 'Meiryo', 'Hiragino Sans', sans-serif;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      background-color: #f7f7fa;
-      color: #222;
-      line-height: 1.6;
-    }
-
-    h1, h2 {
-      color: #2d3a4a;
-      margin-bottom: 1em;
-      padding-bottom: 8px;
-      border-bottom: 2px solid #e0e0e0;
-    }
-
-    h2 {
-      font-size: 1.2em;
-      margin-top: 1.5em;
-    }
-
-    .card {
-      background: white;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-
-    .form-group {
-      margin-bottom: 15px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #444;
-    }
-
-    input[type="text"], textarea, select {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 14px;
-    }
-
-    input[readonly] {
-      background-color: #f5f5f5;
-      color: #666;
-      cursor: not-allowed;
-    }
-
-    select {
-      background-color: white;
-      cursor: pointer;
-    }
-
-    textarea {
-      min-height: 120px;
-      resize: vertical;
-    }
-
-    input[type="text"]:focus:not([readonly]), textarea:focus, select:focus {
-      border-color: #1976d2;
-      outline: none;
-      box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.2);
-    }
-
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      margin: 0 0 15px 0;
-    }
-
-    .checkbox-group input[type="checkbox"] {
-      margin-right: 8px;
-    }
-
-    .checkbox-wrapper {
-      margin-bottom: 10px;
-    }
-
-    .non-reasoning {
-      margin: 0px;
-    }
-
-    .hint {
-      font-size: 0.85em;
-      color: #666;
-      margin: 0 0 10px 24px;
-    }
-
-    .model-description {
-      font-size: 0.85em;
-      color: #666;
-      margin-top: 8px;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    .button-group {
-      margin-top: 1.5em;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    button {
-      padding: 8px 16px;
-      border-radius: 4px;
-      background: #1976d2;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
-      transition: background 0.2s;
-    }
-
-    button:hover {
-      background: #1565c0;
-    }
-
-    #saveStatus {
-      color: #388e3c;
-      font-weight: 500;
-    }
-
-    .prompt-controls {
-      position: relative;
-    }
-
-    .secondary-button {
-      position: absolute;
-      right: 10px;
-      top: 10px;
-      background: #f0f0f0;
-      color: #444;
-      border: 1px solid #ddd;
-      padding: 4px 8px;
-      font-size: 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-
-    .secondary-button:hover {
-      background: #e0e0e0;
-      border-color: #bbb;
-    }
-
-    .note {
-      font-size: 0.9em;
-      color: #666;
-      margin-top: 5px;
-    }
-
-    .success {
-      color: green;
-      margin-top: 10px;
-    }
-
-    .error {
-      color: red;
-      margin-top: 10px;
-    }
-  </style>
+  <!-- TailwindCSS -->
+  <link rel="stylesheet" href="css/tailwind.css">
+  <!-- カスタムCSS -->
+  <link rel="stylesheet" href="css/custom.css">
 </head>
-<body>
-  <h1>Paper2Notion 設定</h1>
+<body class="max-w-4xl mx-auto p-5 bg-gray-50 text-gray-800 leading-relaxed font-sans">
+  <h1 class="text-gray-700 mb-4 pb-2 border-b-2 border-gray-200 text-2xl">Paper2Notion 設定</h1>
   <form id="optionsForm">
-    <div class="card">
-      <h2>Gemini設定</h2>
-      <div class="form-group">
-        <label for="geminiApiKey">Gemini API Key</label>
-        <input type="text" id="geminiApiKey" name="geminiApiKey">
+    <div class="bg-white rounded-lg shadow-md p-5 mb-5">
+      <h2 class="text-gray-700 mb-4 pb-2 border-b-2 border-gray-200 text-xl mt-6 first:mt-0">Gemini設定</h2>
+      <div class="mb-4">
+        <label for="geminiApiKey" class="block mb-1 font-bold text-gray-700">Gemini API Key</label>
+        <input type="text" id="geminiApiKey" name="geminiApiKey" class="w-full p-2.5 border border-gray-300 rounded box-border text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
       </div>
 
-      <div class="form-group">
-        <label for="geminiModel">Gemini モデル</label>
-        <select id="geminiModel" name="geminiModel">
+      <div class="mb-4">
+        <label for="geminiModel" class="block mb-1 font-bold text-gray-700">Gemini モデル</label>
+        <select id="geminiModel" name="geminiModel" class="w-full p-2.5 border border-gray-300 rounded box-border text-sm bg-white cursor-pointer focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
           <option value="gemini-2.5-pro-preview-05-06">Gemini 2.5 Pro</option>
           <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash</option>
           <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
@@ -198,38 +28,38 @@
         </select>
       </div>
 
-      <div id="nonReasoningOption" class="checkbox-wrapper hidden">
-        <div class="checkbox-group">
-          <input type="checkbox" id="useNonReasoning" name="useNonReasoning">
-          <label for="useNonReasoning" class="non-reasoning">Non-reasoningモードを使用する</label>
+      <div id="nonReasoningOption" class="mb-2.5 hidden">
+        <div class="flex items-center mb-4">
+          <input type="checkbox" id="useNonReasoning" name="useNonReasoning" class="mr-2">
+          <label for="useNonReasoning" class="m-0">Non-reasoningモードを使用する</label>
         </div>
       </div>
 
-      <div class="form-group">
-        <label for="customPrompt">カスタムプロンプト（論文要約用）</label>
-        <div class="prompt-controls">
-          <textarea id="customPrompt" name="customPrompt" placeholder="論文の要約や特定の情報抽出のためのプロンプトを入力してください"></textarea>
-          <button type="button" id="resetPrompt" class="secondary-button">デフォルトに戻す</button>
+      <div class="mb-4">
+        <label for="customPrompt" class="block mb-1 font-bold text-gray-700">カスタムプロンプト（論文要約用）</label>
+        <div class="relative">
+          <textarea id="customPrompt" name="customPrompt" placeholder="論文の要約や特定の情報抽出のためのプロンプトを入力してください" class="w-full p-2.5 border border-gray-300 rounded box-border text-sm min-h-32 resize-y focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200"></textarea>
+          <button type="button" id="resetPrompt" class="absolute right-2.5 top-2.5 bg-gray-100 text-gray-700 border border-gray-300 px-2 py-1 text-xs rounded cursor-pointer transition-all duration-200 hover:bg-gray-200 hover:border-gray-400">デフォルトに戻す</button>
         </div>
-        <div class="hint">論文の要約スタイルをプロンプトとして指定できます。空白の場合はデフォルトプロンプトが使用されます。</div>
+        <div class="text-sm text-gray-600 ml-6 mb-2.5">論文の要約スタイルをプロンプトとして指定できます。空白の場合はデフォルトプロンプトが使用されます。</div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Notion設定</h2>
-      <div class="form-group">
-        <label for="notionApiKey">Notion API Key</label>
-        <input type="text" id="notionApiKey" name="notionApiKey">
+    <div class="bg-white rounded-lg shadow-md p-5 mb-5">
+      <h2 class="text-gray-700 mb-4 pb-2 border-b-2 border-gray-200 text-xl mt-6 first:mt-0">Notion設定</h2>
+      <div class="mb-4">
+        <label for="notionApiKey" class="block mb-1 font-bold text-gray-700">Notion API Key</label>
+        <input type="text" id="notionApiKey" name="notionApiKey" class="w-full p-2.5 border border-gray-300 rounded box-border text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
       </div>
-      <div class="form-group">
-        <label for="notionDatabaseId">Notion Database ID</label>
-        <input type="text" id="notionDatabaseId" name="notionDatabaseId">
+      <div class="mb-4">
+        <label for="notionDatabaseId" class="block mb-1 font-bold text-gray-700">Notion Database ID</label>
+        <input type="text" id="notionDatabaseId" name="notionDatabaseId" class="w-full p-2.5 border border-gray-300 rounded box-border text-sm focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-200">
       </div>
     </div>
 
-    <div class="button-group">
-      <button type="submit">設定を保存</button>
-      <span id="saveStatus"></span>
+    <div class="mt-6 flex items-center gap-2.5">
+      <button type="submit" class="px-4 py-2 rounded bg-blue-600 text-white border-none cursor-pointer text-sm transition-colors duration-200 hover:bg-blue-700">設定を保存</button>
+      <span id="saveStatus" class="text-green-600 font-medium"></span>
     </div>
   </form>
   <script src="options.js" type="module"></script>

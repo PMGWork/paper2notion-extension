@@ -20,7 +20,8 @@
   "host_permissions": [
     "https://api.notion.com/*",
     "https://api.crossref.org/*",
-    "http://export.arxiv.org/*"
+    "http://export.arxiv.org/*",
+    "file:///*"
   ],
   "background": {
     "service_worker": "background.js",

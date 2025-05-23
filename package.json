@@ -1,0 +1,25 @@
+{
+  "name": "paper2notion-extension",
+  "version": "1.0.0",
+  "description": "論文PDFからメタデータと要約を自動抽出し、Notionデータベースに保存するChrome拡張機能です。",
+  "main": "background.js",
+  "scripts": {
+    "build-css": "tailwindcss -i css/input.css -o css/tailwind.css --minify",
+    "watch-css": "tailwindcss -i css/input.css -o css/tailwind.css --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/PMGWork/paper2notion-extension.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/PMGWork/paper2notion-extension/issues"
+  },
+  "homepage": "https://github.com/PMGWork/paper2notion-extension#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}

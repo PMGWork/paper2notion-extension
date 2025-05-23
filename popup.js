@@ -1,19 +1,14 @@
-import { getCurrentTabPdf } from "./utils/pdf.js";
-import {
-  META_EXTRACTION_PROMPT,
-  PAPER_META_SCHEMA,
-  ABSTRACT_TRANSLATION_PROMPT,
-  DEFAULT_SUMMARY_PROMPT,
-  READABLE_META_EXTRACTION_PROMPT,
-  READABLE_SUMMARY_PROMPT
-} from "./utils/prompts.js";
-
 // popup.js
+
+import { getCurrentTabPdf, processLocalPdf } from "./utils/pdf.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const sendToNotionBtn = document.getElementById("sendToNotionBtn");
   const progress = document.getElementById("progress");
   const result = document.getElementById("result");
+  const pdfFileInput = document.getElementById("pdfFileInput");
+  const browserFileInfo = document.getElementById("browser-file-info");
+  const localFileInfo = document.getElementById("local-file-info");
 
   // 進捗バーを作成
   const progressBar = document.createElement("progress");
@@ -27,6 +22,78 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let selectedPdfFile = null;
   let processingState = null;
+  let currentSource = 'browser';
+
+  // タブ機能の実装
+  const tabs = document.querySelectorAll('.tab');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const targetTab = tab.dataset.tab;
+
+      // タブの切り替え
+      tabs.forEach(t => t.classList.remove('active'));
+      tabContents.forEach(tc => tc.classList.remove('active'));
+
+      tab.classList.add('active');
+      document.getElementById(`${targetTab}-tab`).classList.add('active');
+
+      // 現在のソースを更新
+      currentSource = targetTab;
+      selectedPdfFile = null; // ファイル選択をリセット
+
+      // UI状態をリセット
+      if (targetTab === 'browser') {
+        loadBrowserPdf();
+      } else {
+        localFileInfo.textContent = "PDFファイルを選択してください";
+        pdfFileInput.value = "";
+      }
+    });
+  });
+
+  // ローカルファイル選択の処理
+  pdfFileInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      selectedPdfFile = await processLocalPdf(file, result, localFileInfo);
+      if (selectedPdfFile) {
+        const sizeInMB = (selectedPdfFile.size / (1024 * 1024)).toFixed(2);
+        localFileInfo.textContent = `選択中: ${selectedPdfFile.name} (${sizeInMB}MB)`;
+        result.textContent = ""; // エラーメッセージをクリア
+      }
+    } else {
+      selectedPdfFile = null;
+      localFileInfo.textContent = "PDFファイルを選択してください";
+    }
+  });
+
+  // ブラウザPDFの読み込み
+  async function loadBrowserPdf() {
+    browserFileInfo.textContent = "現在のタブからPDFを取得しています...";
+
+    // 現在のタブ情報を取得
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const activeTab = tabs[0];
+
+    // file://スキームの場合は特別な説明を表示
+    if (activeTab && activeTab.url && activeTab.url.startsWith('file://')) {
+      browserFileInfo.textContent = "ローカルファイル（file://）を検出しました。処理中...";
+    }
+
+    selectedPdfFile = await getCurrentTabPdf(result, browserFileInfo);
+    if (selectedPdfFile) {
+      const sizeInMB = (selectedPdfFile.size / (1024 * 1024)).toFixed(2);
+      browserFileInfo.textContent = `選択中: ${selectedPdfFile.name} (${sizeInMB}MB)`;
+      result.textContent = ""; // エラーメッセージをクリア
+    } else if (activeTab && activeTab.url && activeTab.url.startsWith('file://')) {
+      // file://スキームでエラーが発生した場合の追加説明
+      if (!result.textContent.includes("ファイルのURLへのアクセスを許可する")) {
+        result.textContent += "\n\n設定方法：\n1. chrome://extensions/ を開く\n2. Paper2Notionの「詳細」をクリック\n3. 「ファイルのURLへのアクセスを許可する」をONにする";
+      }
+    }
+  }
 
   // 処理状態の更新を反映
   function updateUI(state) {
@@ -84,19 +151,29 @@ document.addEventListener("DOMContentLoaded", () => {
     return true;
   });
 
-  // ページロード時に現在のタブからPDFを取得
-  getCurrentTabPdf(result, progress).then(file => {
-    selectedPdfFile = file;
-  });
+  // 初期状態でブラウザPDFを読み込み
+  loadBrowserPdf();
 
   sendToNotionBtn.addEventListener("click", async () => {
-    // PDFがまだ取得されていない場合、再取得を試みる
-    if (!selectedPdfFile) {
-      selectedPdfFile = await getCurrentTabPdf(result, progress);
+    // 現在のソースに応じてPDFファイルを取得
+    if (currentSource === 'browser') {
       if (!selectedPdfFile) {
-        result.textContent = "PDFファイルが取得できませんでした。現在のタブがPDFであることを確認してください。";
-        return;
+        selectedPdfFile = await getCurrentTabPdf(result, browserFileInfo);
       }
+    } else if (currentSource === 'local') {
+      if (!selectedPdfFile && pdfFileInput.files[0]) {
+        selectedPdfFile = await processLocalPdf(pdfFileInput.files[0], result, localFileInfo);
+      }
+    }
+
+    // PDFファイルの確認
+    if (!selectedPdfFile) {
+      if (currentSource === 'browser') {
+        result.textContent = "PDFファイルが取得できませんでした。現在のタブがPDFであることを確認してください。";
+      } else {
+        result.textContent = "PDFファイルを選択してください。";
+      }
+      return;
     }
 
     progress.textContent = "Notion送信処理を開始します...";
