@@ -23,7 +23,8 @@ let processingState = {
   result: '',
   error: null,
   notionPageUrl: null,
-  pdfFileName: null
+  pdfFileName: null,
+  sendStatus: null // 送信結果の詳細: 'success', 'file_skipped', 'failed'
 };
 
 // 処理状態を更新する関数
@@ -67,18 +68,8 @@ async function updateProcessingState(update) {
     console.log('ポップアップが閉じているため状態更新メッセージを送信できませんでした');
   });
 
-  // 重要な状態変化があればユーザーに通知
-  if (update.currentStep && update.currentStep !== processingState.currentStep) {
-    chrome.notifications.create({
-      type: 'basic',
-      iconUrl: chrome.runtime.getURL('icon.png'),
-      title: 'Paper2Notion',
-      message: update.currentStep
-    });
-  }
-
-  // エラーがあれば通知
-  if (update.error) {
+  // エラーがあれば通知（処理終了時のみ）
+  if (update.error && update.isProcessing === false) {
     chrome.notifications.create({
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icon.png'),
@@ -89,14 +80,22 @@ async function updateProcessingState(update) {
 
   // 完了したら通知
   if (update.isProcessing === false && prevState.isProcessing === true) {
+    let notificationMessage = 'Notionに送信しました';
+
+    if (update.sendStatus === 'file_skipped') {
+      notificationMessage = 'PDFファイルが大きすぎるため情報のみ送信しました';
+    } else if (update.sendStatus === 'failed') {
+      notificationMessage = '送信に失敗しました';
+    }
+
     chrome.notifications.create({
       type: 'basic',
       iconUrl: chrome.runtime.getURL('icon.png'),
       title: 'Paper2Notion',
-      message: '処理が完了しました',
-      buttons: [
+      message: notificationMessage,
+      buttons: update.sendStatus !== 'failed' ? [
         { title: 'Notionページを開く' }
-      ]
+      ] : undefined
     });
   }
 }
@@ -230,12 +229,15 @@ async function processAndSendToNotion(pdfFile) {
     const pdfContentType = pdfFile.type || "application/pdf";
 
     let pdfFileUploadId = null;
+    let sendStatus = 'success'; // デフォルトは完全成功
+
     const uploadResult = await uploadFileToNotion(pdfBytes, pdfName, pdfContentType, config.notionApiKey);
     if (!uploadResult.success) {
       if (uploadResult.skipFile) {
         // ファイルサイズが大きすぎる場合はアップロードをスキップし、メタデータのみ送信する
         console.warn("ファイルサイズが大きすぎるため、メタデータのみ送信します:", uploadResult.message);
         updateProcessingState({ currentStep: uploadResult.message, progress: 95 });
+        sendStatus = 'file_skipped';
       } else {
         // その他のエラーの場合は処理を中止する
         throw new Error("NotionへのPDFアップロードに失敗しました: " + uploadResult.message);
@@ -253,9 +255,10 @@ async function processAndSendToNotion(pdfFile) {
         isProcessing: false,
         currentStep: '',
         progress: 100,
-        result: 'Notionへの送信に成功しました',
+        result: '',
         notionPageUrl: notionResult.pageUrl || null,
-        pdfFileName: pdfFile.name
+        pdfFileName: pdfFile.name,
+        sendStatus: sendStatus
       });
     } else {
       throw new Error(notionResult.message);
@@ -267,7 +270,8 @@ async function processAndSendToNotion(pdfFile) {
       currentStep: '',
       error: `エラー: ${e.message}`,
       progress: 0,
-      pdfFileName: pdfFile ? pdfFile.name : null
+      pdfFileName: pdfFile ? pdfFile.name : null,
+      sendStatus: 'failed'
     });
   }
 }
@@ -284,7 +288,8 @@ chrome.runtime.onInstalled.addListener(() => {
       result: '',
       error: null,
       notionPageUrl: null,
-      pdfFileName: null
+      pdfFileName: null,
+      sendStatus: null
     }
   }).catch(e => console.error('初期状態の保存に失敗しました:', e));
 });

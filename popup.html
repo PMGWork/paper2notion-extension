@@ -8,48 +8,82 @@
   <!-- カスタムCSS -->
   <link rel="stylesheet" href="css/custom.css">
 </head>
-<body class="w-96 m-0 p-4 bg-gray-50 text-gray-800 leading-relaxed font-sans">
-  <h1 class="text-gray-700 mb-4 pb-2 border-b-2 border-gray-200 text-2xl">Paper2Notion</h1>
-  <div class="bg-white rounded-lg shadow-md p-4 mb-4">
-    <!-- PDFソース選択タブ -->
-    <div class="flex mb-3 border-b border-gray-200">
-      <button class="tab flex-1 px-3 py-2 bg-none border-none cursor-pointer text-sm text-gray-600 border-b-2 border-transparent transition-all duration-200 hover:bg-gray-50 active" data-tab="browser">ブラウザPDF</button>
-      <button class="tab flex-1 px-3 py-2 bg-none border-none cursor-pointer text-sm text-gray-600 border-b-2 border-transparent transition-all duration-200 hover:bg-gray-50" data-tab="local">ローカルファイル</button>
-    </div>
-
-    <!-- ブラウザPDFタブ -->
-    <div class="tab-content block" id="browser-tab">
-      <div class="text-sm text-gray-600 mb-2 p-2 bg-gray-100 rounded min-h-5" id="browser-file-info">
-        現在のタブからPDFを取得します...
+<body class="w-96 m-0 p-0 bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen font-sans">
+  <!-- Header -->
+  <div class="bg-white/80 backdrop-blur-sm border-b border-slate-200/60 p-4 sticky top-0 z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
       </div>
-      <div class="text-xs text-gray-600 mt-2">
-        ※ ローカルファイル（file://）の場合は、拡張機能の設定で「ファイルのURLへのアクセスを許可する」を有効にしてください
-      </div>
+      <h1 class="text-xl font-bold bg-gradient-to-r from-slate-700 to-slate-600 bg-clip-text text-transparent">
+        Paper2Notion
+      </h1>
     </div>
+  </div>
 
-    <!-- ローカルファイルタブ -->
-    <div class="tab-content hidden" id="local-tab">
-      <div class="mb-3">
-        <label for="pdfFileInput" class="block mb-1 font-bold text-gray-700">PDFファイルを選択:</label>
-        <input type="file" id="pdfFileInput" accept=".pdf" class="w-full mb-2 p-2 border-2 border-dashed border-gray-300 rounded bg-gray-50 cursor-pointer transition-colors duration-200 hover:border-blue-600" />
-        <div class="text-sm text-gray-600 mb-2 p-2 bg-gray-100 rounded min-h-5" id="local-file-info">
-          PDFファイルを選択してください
+  <div class="p-4 space-y-4">
+    <!-- Main Card -->
+    <div class="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-5 transition-all duration-300 hover:shadow-xl">
+      <!-- PDF Source Info -->
+      <div class="mb-4">
+        <div class="flex items-center gap-2 mb-3">
+          <svg class="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          <span class="text-sm font-medium text-slate-700">PDFソース</span>
+        </div>
+
+        <div id="browser-file-info" class="bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600 min-h-[3rem] flex items-center">
+          <div class="flex items-center gap-2">
+            <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <span>現在のタブからPDFを取得します...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="mb-4">
+        <button id="sendToNotionBtn" class="w-full group relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl">
+          <div class="flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 group-disabled:opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+            <span class="group-disabled:opacity-50">Notionに送信</span>
+          </div>
+
+          <!-- Loading spinner (hidden by default) -->
+          <div class="absolute inset-0 flex items-center justify-center opacity-0 group-disabled:opacity-100 transition-opacity duration-300">
+            <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Status Section -->
+      <div class="border-t border-slate-200 pt-4">
+        <!-- Progress -->
+        <div id="progress" class="mb-3 min-h-[1.5rem]">
+          <!-- Progress content will be dynamically added -->
+        </div>
+
+        <!-- Result/Error -->
+        <div id="result" class="min-h-[1.5rem]">
+          <!-- Result content will be dynamically added -->
         </div>
       </div>
     </div>
 
-    <div class="flex items-center gap-2 mb-3">
-      <button id="sendToNotionBtn" class="px-3 py-2 rounded bg-blue-600 text-white border-none cursor-pointer text-sm transition-colors duration-200 flex-grow hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">Notionに送信</button>
+    <!-- Settings Link -->
+    <div class="flex justify-end">
+      <a href="#" id="openOptions" class="inline-flex items-center gap-1 text-sm text-slate-600 hover:text-blue-600 transition-colors duration-200 group">
+        <svg class="w-4 h-4 group-hover:rotate-90 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span>設定</span>
+      </a>
     </div>
-
-    <div class="border-t border-gray-200 pt-3 mt-3">
-      <div id="progress" class="mt-3 text-sm text-blue-600 min-h-5 whitespace-pre-line leading-snug"></div>
-      <div id="result" class="mt-2 text-sm text-red-600 break-all min-h-5 whitespace-pre-line leading-snug"></div>
-    </div>
-  </div>
-
-  <div class="flex justify-end mt-3 text-xs">
-    <a href="#" id="openOptions" class="text-blue-600 no-underline hover:underline">設定</a>
   </div>
 
   <script type="module" src="popup.js"></script>

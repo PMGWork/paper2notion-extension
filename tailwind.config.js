@@ -6,31 +6,93 @@ module.exports = {
     "./utils/*.js"
   ],
   safelist: [
-    'w-96', 'm-0', 'p-4', 'bg-gray-50', 'text-gray-800', 'leading-relaxed', 'font-sans',
-    'text-gray-700', 'mb-4', 'pb-2', 'border-b-2', 'border-gray-200', 'text-2xl',
-    'bg-white', 'rounded-lg', 'shadow-md', 'mb-4',
-    'flex', 'mb-3', 'border-b', 'border-gray-200',
-    'flex-1', 'px-3', 'py-2', 'bg-none', 'border-none', 'cursor-pointer', 'text-sm', 'text-gray-600', 'border-b-2', 'border-transparent', 'transition-all', 'duration-200', 'hover:bg-gray-50',
-    'text-sm', 'text-gray-600', 'mb-2', 'p-2', 'bg-gray-100', 'rounded', 'min-h-5',
-    'text-xs', 'text-gray-600', 'mt-2',
-    'tab-content', 'block', 'hidden',
-    'mb-3', 'block', 'mb-1', 'font-bold', 'text-gray-700',
-    'w-full', 'mb-2', 'p-2', 'border-2', 'border-dashed', 'border-gray-300', 'rounded', 'bg-gray-50', 'cursor-pointer', 'transition-colors', 'duration-200', 'hover:border-blue-600',
-    'flex', 'items-center', 'gap-2', 'mb-3',
-    'px-3', 'py-2', 'rounded', 'bg-blue-600', 'text-white', 'border-none', 'cursor-pointer', 'text-sm', 'transition-colors', 'duration-200', 'flex-grow', 'hover:bg-blue-700', 'disabled:bg-gray-400', 'disabled:cursor-not-allowed',
-    'border-t', 'border-gray-200', 'pt-3', 'mt-3',
-    'mt-3', 'text-sm', 'text-blue-600', 'min-h-5', 'whitespace-pre-line', 'leading-snug',
-    'mt-2', 'text-sm', 'text-red-600', 'break-all', 'min-h-5', 'whitespace-pre-line', 'leading-snug',
-    'flex', 'justify-end', 'mt-3', 'text-xs',
-    'text-blue-600', 'no-underline', 'hover:underline',
-    'max-w-4xl', 'mx-auto', 'p-5', 'mb-5', 'text-xl', 'mt-6', 'first:mt-0',
-    'p-2.5', 'border', 'border-gray-300', 'box-border', 'focus:border-blue-600', 'focus:outline-none', 'focus:ring-2', 'focus:ring-blue-200',
-    'bg-white', 'cursor-pointer', 'mb-2.5', 'mr-2', 'm-0',
-    'relative', 'min-h-32', 'resize-y', 'absolute', 'right-2.5', 'top-2.5', 'bg-gray-100', 'text-gray-700', 'border-gray-300', 'px-2', 'py-1', 'text-xs', 'hover:bg-gray-200', 'hover:border-gray-400',
-    'ml-6', 'mt-6', 'gap-2.5', 'px-4', 'text-green-600', 'font-medium'
+    // 基本レイアウト
+    'w-96', 'm-0', 'p-0', 'p-4', 'p-5', 'p-6', 'px-3', 'px-4', 'px-6', 'py-1', 'py-2', 'py-3', 'py-4', 'py-8',
+    'min-h-screen', 'min-h-5', 'min-h-32', 'min-h-[1.5rem]', 'min-h-[3rem]',
+    'max-w-4xl', 'w-2', 'w-4', 'w-5', 'w-6', 'w-8', 'w-10', 'w-full',
+    'h-2', 'h-4', 'h-5', 'h-6', 'h-8', 'h-10',
+
+    // フォント
+    'font-sans', 'font-medium', 'font-semibold', 'font-bold',
+    'text-xs', 'text-sm', 'text-xl', 'text-2xl',
+    'leading-relaxed', 'leading-snug',
+
+    // 色とグラデーション
+    'bg-gradient-to-br', 'bg-gradient-to-r',
+    'from-slate-50', 'to-blue-50', 'from-slate-700', 'to-slate-600',
+    'from-blue-600', 'to-indigo-600', 'from-blue-700', 'to-indigo-700',
+    'from-green-500', 'to-emerald-500', 'from-slate-400', 'to-slate-500',
+    'bg-clip-text', 'text-transparent',
+    'bg-white', 'bg-slate-50', 'bg-slate-100', 'bg-blue-50', 'bg-amber-50', 'bg-green-50', 'bg-red-50',
+
+    // テキストカラー
+    'text-white', 'text-slate-600', 'text-slate-700', 'text-blue-600', 'text-amber-600', 'text-amber-700',
+    'text-green-600', 'text-red-600',
+
+    // 透明度
+    'bg-white/80', 'bg-white/90', 'border-white/20', 'border-white/30', 'border-slate-200/60',
+    'opacity-0', 'opacity-50', 'opacity-100',
+
+    // ボーダー
+    'border', 'border-b', 'border-t', 'border-slate-200', 'border-slate-300', 'border-blue-200',
+    'border-amber-200', 'border-green-200', 'border-red-200',
+    'rounded', 'rounded-lg', 'rounded-xl', 'rounded-2xl', 'rounded-full',
+
+    // シャドウとぼかし
+    'shadow-lg', 'shadow-xl', 'backdrop-blur-sm',
+
+    // フレックス・グリッド
+    'flex', 'flex-shrink-0', 'items-center', 'items-start', 'justify-center', 'justify-end',
+    'gap-1', 'gap-2', 'gap-3', 'gap-4', 'space-y-2', 'space-y-4', 'space-y-6',
+
+    // マージン・パディング
+    'mb-2', 'mb-3', 'mb-4', 'mt-0.5', 'mt-2', 'mt-3', 'pt-3', 'pt-4',
+    'mx-auto', 'mr-2', 'ml-6',
+
+    // ポジション
+    'relative', 'absolute', 'sticky', 'top-0', 'top-3', 'right-3', 'inset-0',
+    'z-10', 'overflow-hidden',
+
+    // 表示・非表示
+    'block', 'hidden', 'inline-flex',
+
+    // インタラクション
+    'cursor-pointer', 'cursor-not-allowed',
+    'hover:bg-slate-50', 'hover:bg-slate-100', 'hover:bg-slate-200', 'hover:bg-blue-600',
+    'hover:text-blue-600', 'hover:border-slate-400', 'hover:border-blue-600',
+    'hover:shadow-xl', 'hover:scale-[1.02]', 'hover:rotate-90', 'hover:-translate-y-1',
+    'active:scale-[0.98]',
+    'group', 'group-hover:rotate-90', 'group-disabled:opacity-50',
+    'disabled:from-slate-400', 'disabled:to-slate-500', 'disabled:cursor-not-allowed', 'disabled:transform-none',
+
+    // フォーカス
+    'focus:bg-white', 'focus:border-blue-500', 'focus:outline-none', 'focus:ring-2', 'focus:ring-4',
+    'focus:ring-blue-200', 'focus:ring-blue-200/50', 'focus:ring-blue-500',
+
+    // トランジション・アニメーション
+    'transition-all', 'transition-colors', 'transition-opacity', 'transition-transform',
+    'duration-200', 'duration-300', 'transform',
+    'animate-pulse', 'animate-spin', 'animate-fadeInUp',
+
+    // リサイズ
+    'resize-y',
+
+    // その他
+    'whitespace-pre-line', 'break-all', 'no-underline', 'hover:underline',
+    'first:mt-0',
+
+    // 新しいクラス
+    'card-hover', 'success', 'error', 'show'
   ],
   theme: {
-    extend: {},
+    extend: {
+      animation: {
+        'fadeInUp': 'fadeInUp 0.5s ease-out',
+      },
+      backdropBlur: {
+        'sm': '4px',
+      },
+    },
   },
   plugins: [],
 }

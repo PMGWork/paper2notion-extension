@@ -13,7 +13,17 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
     const activeTab = tabs[0];
 
     if (!activeTab || !activeTab.url) {
-      if (resultEl) resultEl.textContent = "タブ情報が取得できません";
+      if (resultEl) {
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>タブ情報が取得できません</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
       return null;
     }
 
@@ -25,7 +35,17 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
     // アクセスできないURLスキームをチェック（file://は除外）
     const inaccessibleSchemes = ['chrome:', 'chrome-extension:', 'data:', 'about:', 'javascript:'];
     if (inaccessibleSchemes.some(scheme => activeTab.url.startsWith(scheme))) {
-      if (resultEl) resultEl.textContent = `このページからはPDFを取得できません（${activeTab.url.split(':')[0]}スキーム）`;
+      if (resultEl) {
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>このページからはPDFを取得できません（${activeTab.url.split(':')[0]}スキーム）</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
       return null;
     }
 
@@ -35,17 +55,46 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
         const response = await fetch(activeTab.url, { method: 'HEAD' });
         const contentType = response.headers.get('content-type');
         if (!contentType || !contentType.includes('application/pdf')) {
-          if (resultEl) resultEl.textContent = "現在のタブはPDFではありません";
+          if (resultEl) {
+            resultEl.innerHTML = `
+              <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>現在のタブはPDFではありません</span>
+              </div>
+            `;
+            resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+          }
           return null;
         }
       } catch (e) {
-        if (resultEl) resultEl.textContent = `タブのコンテンツタイプを確認できません: ${e.message}`;
+        if (resultEl) {
+          resultEl.innerHTML = `
+            <div class="flex items-center gap-2">
+              <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span>タブのコンテンツタイプを確認できません: ${e.message}</span>
+            </div>
+          `;
+          resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+        }
         return null;
       }
     }
 
     // PDFをフェッチ
-    if (progressEl) progressEl.textContent = "PDFを取得しています...";
+    if (progressEl && progressEl === resultEl) {
+      progressEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+          <span>PDFを取得しています...</span>
+        </div>
+      `;
+      progressEl.className = "bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600 min-h-[3rem] flex items-center";
+    }
+
     const response = await fetch(activeTab.url);
     if (!response.ok) {
       throw new Error(`PDFの取得に失敗しました: ${response.status}`);
@@ -56,10 +105,19 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
 
     // BlobをFileオブジェクトに変換
     const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-    if (progressEl) progressEl.textContent = `選択中: ${fileName}`;
     return file;
   } catch (e) {
-    if (resultEl) resultEl.textContent = `PDFの取得中にエラーが発生しました: ${e.message}`;
+    if (resultEl) {
+      resultEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>PDFの取得中にエラーが発生しました: ${e.message}</span>
+        </div>
+      `;
+      resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+    }
     return null;
   }
 }
@@ -75,11 +133,29 @@ async function processLocalFileUrl(fileUrl, resultEl, progressEl) {
   try {
     // URLがPDFファイルかチェック
     if (!fileUrl.toLowerCase().endsWith('.pdf')) {
-      if (resultEl) resultEl.textContent = "現在のタブはPDFファイルではありません";
+      if (resultEl) {
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>現在のタブはPDFファイルではありません</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
       return null;
     }
 
-    if (progressEl) progressEl.textContent = "ローカルPDFファイルを取得しています...";
+    if (progressEl && progressEl === resultEl) {
+      progressEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+          <span>ローカルPDFファイルを取得しています...</span>
+        </div>
+      `;
+      progressEl.className = "bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600 min-h-[3rem] flex items-center";
+    }
 
     // ローカルファイルをフェッチ
     const response = await fetch(fileUrl);
@@ -92,12 +168,32 @@ async function processLocalFileUrl(fileUrl, resultEl, progressEl) {
     // ファイルサイズの検証（50MB制限）
     const maxSize = 50 * 1024 * 1024; // 50MB
     if (pdfBlob.size > maxSize) {
-      if (resultEl) resultEl.textContent = "ファイルサイズが大きすぎます（50MB以下にしてください）";
+      if (resultEl) {
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>ファイルサイズが大きすぎます（50MB以下にしてください）</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
       return null;
     }
 
     if (pdfBlob.size === 0) {
-      if (resultEl) resultEl.textContent = "ファイルが空です";
+      if (resultEl) {
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>ファイルが空です</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
       return null;
     }
 
@@ -105,11 +201,29 @@ async function processLocalFileUrl(fileUrl, resultEl, progressEl) {
     let fileName = extractFileName(fileUrl);
 
     // PDFファイルの基本的な検証
-    if (progressEl) progressEl.textContent = "PDFファイルを検証しています...";
+    if (progressEl && progressEl === resultEl) {
+      progressEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+          <span>PDFファイルを検証しています...</span>
+        </div>
+      `;
+    }
+
     const tempFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
     const isValidPdf = await validatePdfFile(tempFile);
     if (!isValidPdf) {
-      if (resultEl) resultEl.textContent = "有効なPDFファイルではありません";
+      if (resultEl) {
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>有効なPDFファイルではありません</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
       return null;
     }
 
@@ -119,20 +233,30 @@ async function processLocalFileUrl(fileUrl, resultEl, progressEl) {
     // 最終的なFileオブジェクトを作成
     const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-    if (progressEl) {
-      const sizeInMB = (file.size / (1024 * 1024)).toFixed(2);
-      progressEl.textContent = `選択中: ${fileName} (${sizeInMB}MB)`;
-    }
-
     return file;
 
   } catch (e) {
     if (resultEl) {
       if (e.message.includes('Failed to fetch')) {
-        resultEl.textContent = "ローカルファイルにアクセスできません。拡張機能の設定で「ファイルのURLへのアクセスを許可する」を有効にしてください。";
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>ローカルファイルにアクセスできません。</span>
+          </div>
+        `;
       } else {
-        resultEl.textContent = `ローカルファイルの処理中にエラーが発生しました: ${e.message}`;
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>ローカルファイルの処理中にエラーが発生しました: ${e.message}</span>
+          </div>
+        `;
       }
+      resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
     }
     return null;
   }

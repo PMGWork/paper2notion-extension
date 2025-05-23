@@ -23,9 +23,105 @@ input[readonly] {
 
 /* 成功・エラーメッセージ */
 .success {
-  color: #388e3c !important;
+  color: #059669 !important;
 }
 
 .error {
-  color: #d32f2f !important;
+  color: #dc2626 !important;
+}
+
+/* プログレス表示のスタイル */
+#progress:not(:empty) {
+  @apply text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2;
+}
+
+#progress:not(:empty)::before {
+  content: '';
+  @apply w-2 h-2 bg-blue-500 rounded-full animate-pulse;
+}
+
+/* エラー表示のスタイル */
+#result:not(:empty) {
+  @apply text-sm break-all whitespace-pre-line leading-relaxed;
+}
+
+#result.error {
+  @apply text-red-600 bg-red-50 border border-red-200 rounded-lg p-3;
+}
+
+#result.success {
+  @apply text-green-600 bg-green-50 border border-green-200 rounded-lg p-3;
+}
+
+/* PDF情報表示の拡張スタイル */
+#browser-file-info.loaded {
+  @apply bg-green-50 border-green-200 text-green-700;
+}
+
+#browser-file-info.error {
+  @apply bg-red-50 border-red-200 text-red-700;
+}
+
+/* 保存ステータスの表示アニメーション */
+#saveStatus.show {
+  @apply opacity-100;
+}
+
+/* カスタムスクロールバー */
+textarea::-webkit-scrollbar {
+  width: 6px;
+}
+
+textarea::-webkit-scrollbar-track {
+  @apply bg-slate-100 rounded-full;
+}
+
+textarea::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400;
+}
+
+/* フォーカス時のリング効果を改善 */
+input:focus, textarea:focus, select:focus {
+  @apply ring-4 ring-blue-200/50;
+}
+
+/* ホバー効果 */
+.card-hover {
+  @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+}
+
+/* グラデーション背景のバリエーション */
+.bg-gradient-brand {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.bg-gradient-success {
+  background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+}
+
+/* アニメーション */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+/* レスポンシブ調整 */
+@media (max-width: 480px) {
+  body {
+    @apply text-sm;
+  }
+
+  .w-96 {
+    @apply w-full min-w-0;
+  }
 }
