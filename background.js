@@ -12,7 +12,7 @@ import {
   READABLE_SUMMARY_PROMPT
 } from "./utils/prompts.js";
 import { sendPrompt } from "./utils/gemini.js";
-import { searchDoiByTitle, getMetadataFromDoi, isSimilar } from "./utils/metadata.js";
+import { searchDoiByTitle, getMetadataFromDoi } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
 
 // グローバル変数で処理状態を管理
@@ -24,7 +24,7 @@ let processingState = {
   error: null,
   notionPageUrl: null,
   pdfFileName: null,
-  sendStatus: null // 送信結果の詳細: 'success', 'file_skipped', 'failed'
+  sendStatus: null
 };
 
 // 処理状態を更新する関数
@@ -83,7 +83,7 @@ async function updateProcessingState(update) {
     let notificationMessage = 'Notionに送信しました';
 
     if (update.sendStatus === 'file_skipped') {
-      notificationMessage = 'PDFファイルが大きすぎるため情報のみ送信しました';
+      notificationMessage = 'ファイルサイズ超過のためメタデータのみ送信しました';
     } else if (update.sendStatus === 'failed') {
       notificationMessage = '送信に失敗しました';
     }
@@ -175,7 +175,7 @@ async function processAndSendToNotion(pdfFile) {
     }
 
     // 2. DOIとメタデータの補完
-    updateProcessingState({ currentStep: 'CrossrefでDOI検索中...', progress: 30 });
+    updateProcessingState({ currentStep: 'DOI検索中...', progress: 30 });
     let doi = null;
     if (meta && meta.title) {
       doi = await searchDoiByTitle(meta.title);
@@ -184,14 +184,12 @@ async function processAndSendToNotion(pdfFile) {
     let metaCrossref = null;
     if (doi) {
       metaCrossref = await getMetadataFromDoi(doi);
-      if (metaCrossref && isSimilar(meta.title, metaCrossref.title, 0.9)) {
+      if (metaCrossref) {
         if (!metaCrossref.abstract && meta.abstract) {
           metaCrossref.abstract = meta.abstract;
         }
         Object.assign(meta, metaCrossref);
         updateProcessingState({ currentStep: 'Crossrefからメタデータを取得し補完しました', progress: 40 });
-      } else {
-        updateProcessingState({ currentStep: 'タイトル類似度が低いためDOIを採用しませんでした', progress: 40 });
       }
     } else {
       updateProcessingState({ currentStep: 'CrossrefでDOIが見つかりませんでした', progress: 40 });
@@ -235,7 +233,7 @@ async function processAndSendToNotion(pdfFile) {
     if (!uploadResult.success) {
       if (uploadResult.skipFile) {
         // ファイルサイズが大きすぎる場合はアップロードをスキップし、メタデータのみ送信する
-        console.warn("ファイルサイズが大きすぎるため、メタデータのみ送信します:", uploadResult.message);
+        console.warn("ファイルサイズ超過のためメタデータのみ送信します:", uploadResult.message);
         updateProcessingState({ currentStep: uploadResult.message, progress: 95 });
         sendStatus = 'file_skipped';
       } else {

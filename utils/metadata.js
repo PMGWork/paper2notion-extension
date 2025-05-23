@@ -1,19 +1,35 @@
 // metadata.js
-// Crossref/arXiv APIによる論文メタデータ取得
+// 論文メタデータ取得の統合インターフェース
+
+import { searchCrossrefByTitle, sortByPublisherPriority, getCrossrefMetadata } from './crossref.js';
+import { searchArxivByTitle, getArxivMetadata } from './arxiv.js';
+import { isSimilar } from './similarity.js';
 
 export async function searchDoiByTitle(title) {
-  const url = "https://api.crossref.org/works";
-  const params = new URLSearchParams({
-    "query.title": title,
-    "rows": 1,
-    "sort": "relevance"
-  });
-  const resp = await fetch(`${url}?${params}`);
-  if (!resp.ok) return null;
-  const data = await resp.json();
-  const items = data.message?.items || [];
-  if (items.length === 0) return null;
-  return items[0].DOI;
+  // 1. Crossref検索 (5件取得 → 出版社優先度ソート → 類似度判定)
+  const crossrefResults = await searchCrossrefByTitle(title, 5);
+
+  if (crossrefResults && crossrefResults.length > 0) {
+    const sortedResults = sortByPublisherPriority(crossrefResults);
+
+    for (const result of sortedResults) {
+      const resultTitle = result.title?.[0] || "";
+      if (isSimilar(title, resultTitle, 0.85)) {
+        return result.DOI;
+      }
+    }
+  }
+
+  // 2. ArXiv検索 (フォールバック)
+  const arxivResult = await searchArxivByTitle(title);
+  if (arxivResult) {
+    const arxivTitle = arxivResult.title || "";
+    if (isSimilar(title, arxivTitle, 0.75)) {
+      return arxivResult.doi;
+    }
+  }
+
+  return null;
 }
 
 export async function getMetadataFromDoi(doi) {
@@ -23,57 +39,5 @@ export async function getMetadataFromDoi(doi) {
   return await getCrossrefMetadata(doi);
 }
 
-async function getArxivMetadata(arxivDoi) {
-  const arxivId = arxivDoi.split(":")[1];
-  const url = `http://export.arxiv.org/api/query?id_list=${arxivId}`;
-  const resp = await fetch(url);
-  if (!resp.ok) return null;
-  const xml = await resp.text();
-  const parser = new DOMParser();
-  const xmlDoc = parser.parseFromString(xml, "text/xml");
-  const entry = xmlDoc.querySelector("entry");
-  if (!entry) return null;
-  const title = entry.querySelector("title")?.textContent.trim() || "";
-  const authors = Array.from(entry.querySelectorAll("author > name")).map(e => e.textContent).join(", ");
-  const summary = entry.querySelector("summary")?.textContent.trim() || "";
-  const published = entry.querySelector("published")?.textContent;
-  const year = published ? parseInt(published.slice(0, 4)) : null;
-  const arxivUrl = entry.querySelector("id")?.textContent;
-  return {
-    title,
-    authors,
-    journal: "arXiv",
-    year,
-    doi: arxivUrl,
-    abstract: summary
-  };
-}
-
-async function getCrossrefMetadata(doi) {
-  const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
-  const resp = await fetch(url);
-  if (!resp.ok) return null;
-  const data = (await resp.json()).message;
-  const journal = (data["container-title"] && data["container-title"][0]) || "";
-  const title = (data["title"] && data["title"][0]) || "";
-  return {
-    title,
-    authors: (data.author || []).map(a => `${a.given || ""} ${a.family || ""}`).join(", "),
-    journal,
-    year: (data["published-print"]?.["date-parts"]?.[0]?.[0]) || (data["published-online"]?.["date-parts"]?.[0]?.[0]) || null,
-    doi: data.DOI || "",
-    abstract: data.abstract || ""
-  };
-}
-
-// 類似度判定（簡易版）
-export function isSimilar(a, b, threshold = 0.9) {
-  if (!a || !b) return false;
-  // レーベンシュタイン距離やSequenceMatcherの代用として単純な一致率
-  const minLen = Math.min(a.length, b.length);
-  let same = 0;
-  for (let i = 0; i < minLen; i++) {
-    if (a[i] === b[i]) same++;
-  }
-  return (same / Math.max(a.length, b.length)) >= threshold;
-}
+// 後方互換性のため類似度判定関数もエクスポート
+export { isSimilar } from './similarity.js';
