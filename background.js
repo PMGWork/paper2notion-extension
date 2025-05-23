@@ -12,7 +12,7 @@ import {
   READABLE_SUMMARY_PROMPT
 } from "./utils/prompts.js";
 import { sendPrompt } from "./utils/gemini.js";
-import { searchDoiByTitle, getMetadataFromDoi } from "./utils/metadata.js";
+import { searchMetadataByTitle } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
 
 // グローバル変数で処理状態を管理
@@ -176,23 +176,19 @@ async function processAndSendToNotion(pdfFile) {
 
     // 2. DOIとメタデータの補完
     updateProcessingState({ currentStep: 'DOI検索中...', progress: 30 });
-    let doi = null;
+    let metaCrossref = null;
     if (meta && meta.title) {
-      doi = await searchDoiByTitle(meta.title);
+      metaCrossref = await searchMetadataByTitle(meta.title);
     }
 
-    let metaCrossref = null;
-    if (doi) {
-      metaCrossref = await getMetadataFromDoi(doi);
-      if (metaCrossref) {
-        if (!metaCrossref.abstract && meta.abstract) {
-          metaCrossref.abstract = meta.abstract;
-        }
-        Object.assign(meta, metaCrossref);
-        updateProcessingState({ currentStep: 'Crossrefからメタデータを取得し補完しました', progress: 40 });
+    if (metaCrossref) {
+      if (!metaCrossref.abstract && meta.abstract) {
+        metaCrossref.abstract = meta.abstract;
       }
+      Object.assign(meta, metaCrossref);
+      updateProcessingState({ currentStep: 'CrossrefまたはArXivからメタデータを取得し補完しました', progress: 40 });
     } else {
-      updateProcessingState({ currentStep: 'CrossrefでDOIが見つかりませんでした', progress: 40 });
+      updateProcessingState({ currentStep: 'DOIが見つかりませんでした', progress: 40 });
     }
 
     // 3. アブストラクトの翻訳

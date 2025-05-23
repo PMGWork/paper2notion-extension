@@ -21,7 +21,7 @@ export const META_EXTRACTION_PROMPT = `
 - 'title': 論文の正確なタイトル
 - 'authors': 全ての著者の氏名をカンマ区切りで列挙、姓と名の間には半角スペースを入れる
 - 'year': 出版年（西暦）
-- 'abstract': アブストラクトの全文、途中に改行を入れないでください
+- 'abstract': アブストラクトの全文を出力し、段落分けや改行を削除し1行の文章にしてください
 - 'isJapanese': 論文が日本語で記述されている場合は true、そうでない場合は false
 `;
 
@@ -32,14 +32,14 @@ export const READABLE_META_EXTRACTION_PROMPT = `
 - 'title': 論文の正確なタイトル
 - 'authors': 全ての著者の氏名をカンマ区切りで列挙
 - 'year': 出版年（西暦）
-- 'abstract': アブストラクトの全文（英語原文）、途中に改行を入れないでください
+- 'abstract': アブストラクトの全文（英語原文）
 - 'isJapanese': falseを出力してください
 `;
 
 // アブストラクト翻訳用のプロンプト
 export const ABSTRACT_TRANSLATION_PROMPT = (abstract) => `
 以下のアブストラクトを、論文の文脈に沿った自然な日本語に翻訳してください。
-翻訳されたアブストラクトの文章のみを出力し、元の文章の段落分けや改行を可能な限り維持してください。
+翻訳されたアブストラクトの文章のみを出力し、段落分けや改行を削除し1行の文章にしてください。
 ${abstract}
 `;
 
