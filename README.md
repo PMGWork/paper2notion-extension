@@ -1,276 +1,129 @@
 # Paper2Notion Extension
 
-論文PDFからメタデータと要約を自動抽出し、Notionデータベースに保存するChrome拡張機能です。
+📚 論文PDFからメタデータと要約を自動抽出し、Notionデータベースに保存するChrome拡張機能
 
 ![Paper2Notion Extension](icon.png)
 
-## 🚀 主な機能
+## ✨ 主な機能
 
-- **📄 論文メタデータ自動抽出**: タイトル、著者、ジャーナル、出版年、アブストラクトを自動抽出
-- **🤖 AI要約生成**: Gemini APIを使用した高品質な論文要約の生成
-- **🌐 多言語対応**: 日本語翻訳版PDF（Readable形式）にも対応
-- **📚 Notion連携**: 抽出データとPDFファイルを自動でNotionデータベースに保存
-- **⚡ 高速処理**: Gemini 2.5 Flash 非推論モードによる高速処理
-- **🔧 カスタマイズ可能**: 要約プロンプトのカスタマイズが可能
-- **📁 ローカルファイル対応**: ブラウザで開いたPDFとローカルPDFファイルの両方に対応
+- **📄 メタデータ自動抽出**: タイトル、著者、ジャーナル、出版年、アブストラクトを自動取得
+- **🤖 AI要約生成**: Gemini APIによる構造化された論文要約
+- **🌐 多言語対応**: 英語・日本語論文、Readable形式PDFに対応
+- **📚 Notion連携**: ワンクリックでNotionデータベースに保存
 
 ## 📋 必要な準備
 
-### 1. APIキーの取得
+### 1. Gemini API キーの取得
 
-#### Gemini API Key
-1. [Google AI Studio](https://makersuite.google.com/app/apikey)にアクセス
+1. [Google AI Studio](https://makersuite.google.com/app/apikey) にアクセス
 2. Googleアカウントでログイン
 3. 「Create API Key」をクリック
 4. 生成されたAPIキーをコピーして保存
 
-#### Notion API Key
-1. [Notion Integrations](https://www.notion.so/my-integrations)にアクセス
+### 2. Notion API の設定
+
+#### Integration作成
+1. [Notion Integrations](https://www.notion.so/my-integrations) にアクセス
 2. 「New integration」をクリック
 3. 統合名を入力（例：Paper2Notion）
-4. ワークスペースを選択
-5. 「Submit」をクリック
-6. 生成された「Internal Integration Token」をコピーして保存
+4. 「Submit」で作成
+5. 「Internal Integration Token」をコピー保存
 
-### 2. Notionデータベースの準備
-
+#### データベース作成
 1. Notionで新しいデータベースを作成
-2. 以下のプロパティを追加（推奨）：
-   - **Title**（タイトル）: タイトル
-   - **Authors**（マルチセレクト）: 著者
-   - **Journal**（テキスト）: ジャーナル
-   - **Year**（数値）: 出版年
-   - **Abstract**（テキスト）: アブストラクト
-   - **Summary**（テキスト）: 要約
-   - **PDF**（ファイル）: PDFファイル
-3. データベースページで「...」→「Connections」→「Connect to」から作成したIntegrationを追加
-4. データベースURLからDatabase IDを取得
-   ```
-   https://www.notion.so/workspace/[ここがDatabase ID]?v=...
-   ```
+2. 以下のプロパティを追加：
+   - **Title** (タイトル型): 論文タイトル
+   - **Authors** (マルチセレクト型): 著者
+   - **Journal** (テキスト型): ジャーナル
+   - **Year** (数値型): 出版年
+   - **Abstract** (テキスト型): アブストラクト
+   - **Summary** (テキスト型): 要約
+   - **PDF** (ファイル型): PDFファイル
 
-## 📥 インストールと設定
+3. データベースにIntegrationを接続
+   - データベースページで「...」→「Connections」→「Connect to」
+   - 作成したIntegrationを選択
 
-### ステップ1: 拡張機能のインストール
+4. Database IDを取得
+   - データベースURL: `https://www.notion.so/workspace/[Database ID]?v=...`
+   - 32文字の英数字文字列をコピー
 
-1. **Chrome Web Storeからインストール**（推奨）
-   - [Paper2Notion Chrome Extension](https://chrome.google.com/webstore)
-   - 「Chromeに追加」をクリック
+## 📥 インストール
 
-2. **手動インストール**（開発版）
-   - このリポジトリをクローンまたはダウンロード
-   - `chrome://extensions/` を開く
-   - 「デベロッパーモード」をON
-   - 「パッケージ化されていない拡張機能を読み込む」を選択
-   - フォルダを選択
+1. このリポジトリをクローン
+2. `chrome://extensions/` を開く
+3. 「デベロッパーモード」を有効化
+4. 「パッケージ化されていない拡張機能を読み込む」でフォルダを選択
 
-### ステップ2: API設定
+## ⚙️ 設定
 
-1. **Gemini API Key**
-   - 取得したGemini APIキーを入力
-   - 使用するモデルを選択（推奨：gemini-2.0-flash-exp）
-   - 高速化したい場合は「非推論モードを使用する」にチェック
-
-2. **Notion API Key**
-   - 取得したNotion Integration Tokenを入力
-
-3. **Notion Database ID**
-   - 準備したNotionデータベースのIDを入力
-
-4. **カスタムプロンプト（オプション）**
-   - 要約生成用の独自プロンプトを設定可能
-   - 空白の場合はデフォルトプロンプトを使用
-
-5. **「設定を保存」をクリック**
+1. 拡張機能アイコンを右クリック→「オプション」
+2. 各項目を入力：
+   - **Gemini API Key**: 取得したAPIキー
+   - **Notion Integration Token**: 取得したトークン
+   - **Notion Database ID**: データベースID
+3. 「設定を保存」をクリック
 
 ## 📖 使用方法
 
-### PDFソースの選択
-
-拡張機能では3つの方法でPDFファイルを処理できます：
-
-#### 1. ブラウザPDF（従来の方法）
-- Chromeブラウザで論文PDFファイルを開く
-- arXiv、Google Scholar、大学のリポジトリなど、どのサイトでもOK
-
-#### 2. ローカルファイル（ブラウザで開いたファイル）
-- Chromeで直接開いたローカルPDFファイル（file://スキーム）
-
-#### 3. ローカルファイル（ファイル選択）
-- コンピュータに保存されているPDFファイルを直接選択
-- ファイルサイズ制限：50MB以下
-- 対応形式：PDF（.pdf）
-
-### 基本的な使い方
+### 基本的な流れ
 
 1. **拡張機能を起動**
    - Chromeツールバーの📄アイコンをクリック
 
-2. **PDFソースを選択**
-   - **ブラウザPDF**: 現在開いているタブのPDFを使用
-   - **ローカルファイル（ブラウザ）**: 「ローカルファイル（ブラウザ）」タブをクリックしてPDFファイルを選択
-   - **ローカルファイル（ファイル選択）**: 「ローカルファイル（ファイル選択）」タブをクリックしてPDFファイルを選択
+2. **処理実行**
+   - 「Notionに送信」をクリック
+   - 処理状況が表示されます（通常1-5分）
 
-3. **ファイルの確認**
-   - 選択されたPDFファイル名とサイズが表示されます
-   - ローカルファイルの場合は、PDFファイルの検証も自動実行
+3. **完了確認**
+   - Notionデータベースに新しいページが作成されます
 
-4. **Notionに送信**
-   - 「Notionに送信」ボタンをクリック
-   - 処理が開始され、進捗が表示されます
+### 対応ファイル
 
-5. **処理完了を確認**
-   - 処理完了後、Notionデータベースに新しいページが作成されます
-   - 抽出されたメタデータ、要約、PDFファイルが保存されます
+- **標準PDF**: 一般的な学術論文
+- **Readable形式**: 日英対訳PDF（`al-`で始まるファイル名）
+- **ファイルサイズ**: 最大50MB
 
-### 処理の流れ
+### 処理時間の目安
 
-```
-📄 PDF読み込み → 🤖 メタデータ抽出 → 📝 要約生成 → 📚 Notion保存
-```
+- 小さなPDF（<5MB）: 1-2分
+- 中程度のPDF（5-20MB）: 2-5分
+- 大きなPDF（20-50MB）: 5-10分
 
-1. **PDFファイル解析**（約10-20秒）
-2. **メタデータ抽出**（約15-30秒）
-3. **要約生成**（約20-40秒）
-4. **Notion保存**（約5-10秒）
+## 🔧 トラブルシューティング
 
-### 対応ファイル形式
-
-- **標準PDF**: 一般的な論文PDF
-- **Readable形式**: ファイル名が `al-` で始まる日本語翻訳PDF
-  - 日本語訳と英語原文の両方を考慮した処理
-- **ローカルPDF（ブラウザ）**: Chromeで開いたローカルPDFファイル（file://）
-  - 拡張機能の権限設定が必要
-  - ファイルサイズ：50MB以下
-  - 自動的なPDFヘッダー検証
-- **ローカルPDF（ファイル選択）**: コンピュータに保存されているPDFファイル
-  - ファイルサイズ：50MB以下
-  - 自動的なPDFヘッダー検証
-  - ファイル名の自動正規化
-
-### ローカルファイル使用時の注意点
-
-- **ファイルサイズ制限**: 50MB以下のPDFファイルのみ対応
-- **ファイル形式**: 有効なPDFファイルのみ（PDFヘッダーを自動検証）
-- **ファイル名**: 特殊文字は自動的に安全な文字に変換されます
-- **セキュリティ**: ファイルはローカルで処理され、必要な部分のみがAPIに送信されます
-- **権限設定**: file://スキームのファイルには拡張機能の権限設定が必要
-
-## 🔍 トラブルシューティング
-
-### よくある問題と解決方法
+### よくある問題
 
 #### 「PDFファイルが取得できませんでした」
-- **原因**: PDFが正しく読み込まれていない
-- **解決方法**:
-  - ページを再読み込みしてから再試行
-  - PDFが完全に読み込まれるまで待機
-  - 別のPDFで試してみる
-
-#### 「有効なPDFファイルではありません」（ローカルファイル）
-- **原因**: 選択したファイルがPDF形式ではない、または破損している
-- **解決方法**:
-  - 正しいPDFファイルを選択し直す
-  - 他のPDFビューアーでファイルが開けるか確認
-  - ファイルが破損していないか確認
-
-#### 「ファイルサイズが大きすぎます」（ローカルファイル）
-- **原因**: 選択したPDFファイルが50MBを超えている
-- **解決方法**:
-  - より小さなPDFファイルを使用する
-  - PDFを圧縮してファイルサイズを削減する
-  - 必要な部分のみを抜粋したPDFを作成する
+- ページを再読み込みしてから再試行
+- PDFが完全に読み込まれるまで待機
 
 #### 「API設定が不正です」
-- **原因**: APIキーまたはDatabase IDが間違っている
-- **解決方法**:
-  - 設定画面でAPIキーを再確認
-  - Database IDが正しいか確認
-  - Notion IntegrationがデータベースにConnectされているか確認
-
-#### 「処理がタイムアウトしました」
-- **原因**: PDFが大きすぎるか、APIの応答が遅い
-- **解決方法**:
-  - 小さなPDFで試してみる
-  - しばらく時間をおいてから再試行
-  - 非推論モードを有効にして高速化
-
-#### 「Notionデータベースにアクセスできません」
-- **原因**: Integration権限の設定不備
-- **解決方法**:
-  - Notionデータベースの「Connections」設定を確認
-  - Integrationが正しく追加されているか確認
-  - Database IDが正確か再確認
+- APIキーとDatabase IDを再確認
+- Notion IntegrationがデータベースにConnectされているか確認
 
 #### ローカルファイルが選択できない
-- **原因**: ブラウザのセキュリティ制限またはファイルアクセス権限の問題
-- **解決方法**:
-  - ファイルが読み取り可能な場所にあることを確認
-  - 別のフォルダからファイルを選択してみる
-  - Chromeブラウザを再起動してから再試行
+- ファイルサイズが50MB以下か確認
+- PDFファイルが破損していないか確認
 
-#### Chromeで開いたローカルPDFが認識されない
-- **原因**: ファイルパスまたは拡張機能の権限設定の問題
-- **解決方法**:
-  - PDFファイルの拡張子が`.pdf`であることを確認
-  - 拡張機能の権限設定を確認（上記参照）
-  - ファイルを一度閉じて再度開き直す
-  - 「ローカルファイル」タブからファイル選択を試す
+### file://権限設定（ローカルファイル用）
+1. `chrome://extensions/` を開く
+2. Paper2Notionの「詳細」をクリック
+3. 「ファイルのURLへのアクセスを許可する」を有効化
 
 ## 🛠️ 開発者向け情報
 
-### プロジェクト構造
-
+### 開発環境セットアップ
+```bash
+git clone https://github.com/PMGWork/paper2notion-extension.git
+cd paper2notion-extension
+npm install
+npm run build-css
 ```
-paper2notion-extension/
-├── manifest.json          # 拡張機能の設定
-├── popup.html             # ポップアップUI
-├── popup.js               # ポップアップロジック
-├── options.html           # 設定画面UI
-├── options.js             # 設定画面ロジック
-├── background.js          # バックグラウンド処理
-├── icons/                 # アイコンファイル
-└── utils/                 # ユーティリティモジュール
-    ├── gemini.js          # Gemini API通信
-    ├── notion.js          # Notion API通信
-    ├── pdf.js             # PDF処理
-    ├── prompts.js         # AIプロンプト管理
-    ├── metadata.js        # メタデータ処理
-    └── optionsStorage.js  # 設定保存
-```
-
-### 主要ファイルの説明
-
-- **`utils/prompts.js`**: Gemini APIに送信するプロンプトテンプレート
-- **`utils/gemini.js`**: Gemini APIとの通信、PDFのBase64エンコード処理
-- **`utils/notion.js`**: Notion APIとの通信、ファイルアップロード、ページ作成
-- **`background.js`**: バックグラウンドでの非同期処理管理
 
 ### カスタマイズ
-
-#### プロンプトのカスタマイズ
-`utils/prompts.js`を編集することで、メタデータ抽出や要約生成のプロンプトをカスタマイズできます。
-
-#### Notionデータベース構造のカスタマイズ
-`utils/notion.js`の`createNotionPage`関数を編集することで、Notionページの構造をカスタマイズできます。
-
-## 📄 ライセンス
-
-MIT License
-
-## 🤝 貢献
-
-プルリクエストやイシューの報告を歓迎します。
-
-1. このリポジトリをフォーク
-2. 機能ブランチを作成 (`git checkout -b feature/amazing-feature`)
-3. 変更をコミット (`git commit -m 'Add amazing feature'`)
-4. ブランチにプッシュ (`git push origin feature/amazing-feature`)
-5. プルリクエストを作成
-
-## 📞 サポート
-
-問題が発生した場合は、[Issues](https://github.com/your-username/paper2notion-extension/issues)で報告してください。
+- **プロンプト**: `utils/prompts.js` を編集
+- **Notionページ構造**: `utils/notion.js` の `createNotionPage` 関数を編集
 
 ---
 
