@@ -189,6 +189,13 @@ async function processAndSendToNotion(pdfFile) {
       updateProcessingState({ currentStep: 'CrossrefまたはArXivからメタデータを取得し補完しました', progress: 40 });
     } else {
       updateProcessingState({ currentStep: 'DOIが見つかりませんでした', progress: 40 });
+      // DOIが見つからない場合でも、Geminiで抽出したメタデータがNotionに送信されるように、
+      // 必須プロパティの欠落を防ぐための補完処理を追加
+      meta.authors = meta.authors || "";
+      meta.journal = meta.journal || "";
+      meta.year = meta.year || null;
+      meta.doi = meta.doi || null; // DOIがない場合はnullのまま
+      meta.abstract = meta.abstract || "";
     }
 
     // 3. アブストラクトの翻訳

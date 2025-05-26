@@ -141,9 +141,9 @@ export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfNam
     "発表年": {
       number: typeof meta.year === "number" ? meta.year : null
     },
-    "ジャーナル": {
-      select: journal ? { name: journal } : null
-    },
+    // ジャーナルが空の場合はプロパティを含めない
+    // NotionのSelectプロパティはnameが必須であり、空文字列は許容されないため
+    ...(journal ? { "ジャーナル": { select: { name: journal } } } : {}),
     "DOI": {
       url: meta.doi || null
     },

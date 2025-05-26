@@ -22,7 +22,7 @@ export async function searchMetadataByTitle(title) {
 
   // 2. ArXiv検索 (フォールバック)
   const arxivResult = await searchArxivByTitle(title);
-  if (arxivResult) {
+  if (arxivResult && isSimilar(title, arxivResult.title, 0.85)) {
     return arxivResult
   }
 
