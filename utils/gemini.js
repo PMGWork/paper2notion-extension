@@ -57,7 +57,7 @@ export async function sendPrompt(pdfFile, prompt, schema = null) {
       // Gemini 2.5 Flashモデルの場合のみ適用
       if (GEMINI_MODEL.includes("gemini-2.5-flash") && USE_NON_REASONING) {
         body.generationConfig.thinkingConfig = {
-          thinkingBudget: 0 // 0に設定すると推論を無効化
+          thinkingBudget: 0
         };
       }
 
