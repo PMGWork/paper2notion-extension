@@ -263,66 +263,6 @@ async function processLocalFileUrl(fileUrl, resultEl, progressEl) {
 }
 
 /**
- * ローカルファイルからPDFを処理する
- * @param {File} file - 選択されたファイル
- * @param {HTMLElement} resultEl - エラー表示用の要素
- * @param {HTMLElement} progressEl - 進捗表示用の要素
- * @returns {Promise<File|null>}
- */
-export async function processLocalPdf(file, resultEl, progressEl) {
-  try {
-    if (!file) {
-      if (resultEl) resultEl.textContent = "ファイルが選択されていません";
-      return null;
-    }
-
-    // ファイルタイプの検証
-    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
-      if (resultEl) resultEl.textContent = "PDFファイルを選択してください";
-      return null;
-    }
-
-    // ファイルサイズの検証（50MB制限）
-    const maxSize = 50 * 1024 * 1024; // 50MB
-    if (file.size > maxSize) {
-      if (resultEl) resultEl.textContent = "ファイルサイズが大きすぎます（50MB以下にしてください）";
-      return null;
-    }
-
-    if (file.size === 0) {
-      if (resultEl) resultEl.textContent = "ファイルが空です";
-      return null;
-    }
-
-    if (progressEl) progressEl.textContent = "PDFファイルを検証しています...";
-
-    // PDFファイルの基本的な検証（PDFヘッダーをチェック）
-    const isValidPdf = await validatePdfFile(file);
-    if (!isValidPdf) {
-      if (resultEl) resultEl.textContent = "有効なPDFファイルではありません";
-      return null;
-    }
-
-    // ファイル名の正規化
-    let fileName = file.name;
-    if (!fileName.toLowerCase().endsWith('.pdf')) {
-      fileName += '.pdf';
-    }
-    fileName = sanitizeFileName(fileName);
-
-    // 新しいFileオブジェクトを作成（正規化されたファイル名で）
-    const processedFile = new File([file], fileName, { type: 'application/pdf' });
-
-    if (progressEl) progressEl.textContent = `選択中: ${fileName}`;
-    return processedFile;
-
-  } catch (e) {
-    if (resultEl) resultEl.textContent = `ファイル処理中にエラーが発生しました: ${e.message}`;
-    return null;
-  }
-}
-
-/**
  * PDFファイルの基本的な検証を行う
  * @param {File} file - 検証するファイル
  * @returns {Promise<boolean>}

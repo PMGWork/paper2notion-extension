@@ -252,11 +252,17 @@ async function processAndSendToNotion(pdfFile) {
     const notionResult = await sendToNotion(meta, summary, pdfFileUploadId, pdfName, config.notionApiKey, config.notionDatabaseId);
 
     if (notionResult.success) {
+      let completionMessage = 'Notionに送信しました';
+      if (sendStatus === 'file_skipped') {
+        completionMessage = 'ファイルサイズ超過のためメタデータのみ送信しました';
+      } else if (sendStatus === 'failed') {
+        completionMessage = '送信に失敗しました';
+      }
       updateProcessingState({
         isProcessing: false,
         currentStep: '',
         progress: 100,
-        result: '',
+        result: completionMessage,
         notionPageUrl: notionResult.pageUrl || null,
         pdfFileName: pdfFile.name,
         sendStatus: sendStatus
