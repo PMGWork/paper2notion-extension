@@ -182,10 +182,17 @@ export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfNam
     body: JSON.stringify(data)
   });
 
-  if (resp.status === 200 || resp.status === 201) {
-    return { success: true, message: "Notionへの送信に成功しました" };
-  } else {
+  if (!resp.ok) {
     const text = await resp.text();
     return { success: false, message: `Notion送信エラー: ${resp.status} - ${text}` };
   }
+
+  const page = await resp.json();
+
+  return {
+    success: true,
+    pageId: page.id || null,
+    pageUrl: page.url || null,
+    message: "Notionへの送信に成功しました"
+  };
 }

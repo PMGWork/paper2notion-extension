@@ -20,6 +20,7 @@
   "host_permissions": [
     "https://api.notion.com/*",
     "https://api.crossref.org/*",
+    "https://export.arxiv.org/*",
     "http://export.arxiv.org/*",
     "file:///*"
   ],
