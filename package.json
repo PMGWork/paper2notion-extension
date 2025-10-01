@@ -21,5 +21,8 @@
   "homepage": "https://github.com/PMGWork/paper2notion-extension#readme",
   "devDependencies": {
     "tailwindcss": "^3.4.17"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.10.38"
   }
 }

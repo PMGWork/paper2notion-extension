@@ -1,14 +1,15 @@
 // Crossref API関連の処理
 
 // Crossrefからタイトルに一致する論文を検索
-export async function searchCrossrefByTitle(title, rows = 5) {
+export async function searchCrossrefByTitle(title, rows = 5, options = {}) {
+  const { signal = null } = options;
   const url = "https://api.crossref.org/works";
   const params = new URLSearchParams({
     "query.title": title,
     "rows": rows,
     "sort": "relevance"
   });
-  const resp = await fetch(`${url}?${params}`);
+  const resp = await fetch(`${url}?${params}`, { signal });
   if (!resp.ok) return null;
   const data = await resp.json();
   return data.message?.items || [];
@@ -43,9 +44,10 @@ function getPublisherPriority(publisher) {
 }
 
 // DOIからCrossrefメタデータを取得
-export async function getCrossrefMetadata(doi) {
+export async function getCrossrefMetadata(doi, options = {}) {
+  const { signal = null } = options;
   const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
-  const resp = await fetch(url);
+  const resp = await fetch(url, { signal });
   if (!resp.ok) return null;
   const data = (await resp.json()).message;
   const journal = (data["container-title"] && data["container-title"][0]) || "";

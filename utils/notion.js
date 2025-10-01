@@ -2,7 +2,7 @@
 // Notion APIで論文情報を送信
 
 // Notionに直接ファイルをアップロードする関数
-export async function uploadFileToNotion(fileData, fileName, contentType, notionApiKey) {
+export async function uploadFileToNotion(fileData, fileName, contentType, notionApiKey, { signal = null } = {}) {
   const notionApiVersion = "2022-06-28";
   const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
 
@@ -36,6 +36,7 @@ export async function uploadFileToNotion(fileData, fileName, contentType, notion
         "Notion-Version": notionApiVersion,
         "Content-Type": "application/json"
       },
+      signal,
       body: JSON.stringify({ name: fileName, type: contentType })
     });
 
@@ -60,6 +61,7 @@ export async function uploadFileToNotion(fileData, fileName, contentType, notion
         "Authorization": `Bearer ${notionApiKey}`,
         "Notion-Version": notionApiVersion
       },
+      signal,
       body: formData
     });
 
@@ -75,11 +77,14 @@ export async function uploadFileToNotion(fileData, fileName, contentType, notion
       message: "ファイルのアップロードに成功しました"
     };
   } catch (e) {
+    if (e.name === 'AbortError') {
+      return { success: false, message: 'ファイルアップロードがキャンセルされました', cancelled: true };
+    }
     return { success: false, message: `ファイルアップロード例外: ${e.message}` };
   }
 }
 
-export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfName = null, notionApiKey, notionDatabaseId) {
+export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfName = null, notionApiKey, notionDatabaseId, { signal = null } = {}) {
   const notionApiVersion = "2022-06-28";
 
   if (!notionApiKey || !notionDatabaseId) {
@@ -179,6 +184,7 @@ export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfNam
       "Notion-Version": notionApiVersion,
       "Content-Type": "application/json"
     },
+    signal,
     body: JSON.stringify(data)
   });
 

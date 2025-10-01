@@ -44,7 +44,7 @@
       </div>
 
       <!-- Action Button -->
-      <div class="mb-4">
+      <div class="mb-4 flex flex-col gap-2">
         <button id="sendToNotionBtn" class="w-full group relative bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-[1.02] active:scale-[0.98] disabled:from-slate-400 disabled:to-slate-500 disabled:cursor-not-allowed disabled:transform-none shadow-lg hover:shadow-xl">
           <div class="flex items-center justify-center gap-2">
             <svg class="w-5 h-5 group-disabled:opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,6 +57,13 @@
           <div class="absolute inset-0 flex items-center justify-center opacity-0 group-disabled:opacity-100 transition-opacity duration-300">
             <div class="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
           </div>
+        </button>
+
+        <button id="cancelBtn" class="w-full flex items-center justify-center gap-2 bg-white/60 border border-slate-200 text-slate-600 font-medium py-2.5 px-4 rounded-xl transition-all duration-200 hover:border-red-300 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          <span>キャンセル</span>
         </button>
       </div>
 

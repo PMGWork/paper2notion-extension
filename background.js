@@ -14,6 +14,7 @@ import {
 import { sendPrompt } from "./utils/gemini.js";
 import { searchMetadataByTitle } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
+import { extractPdfText } from "./utils/pdfToText.js";
 
 // グローバル変数で処理状態を管理
 let processingState = {
@@ -24,8 +25,19 @@ let processingState = {
   error: null,
   notionPageUrl: null,
   pdfFileName: null,
-  sendStatus: null
+  sendStatus: null,
+  cancelRequested: false
 };
+
+let currentAbortController = null;
+let cancelRequested = false;
+
+class CancellationError extends Error {
+  constructor(message = '処理がキャンセルされました') {
+    super(message);
+    this.name = 'CancellationError';
+  }
+}
 
 // 処理状態を更新する関数
 async function updateProcessingState(update) {
@@ -81,11 +93,16 @@ async function updateProcessingState(update) {
   // 完了したら通知
   if (update.isProcessing === false && prevState.isProcessing === true) {
     let notificationMessage = 'Notionに送信しました';
+    let includeOpenButton = true;
 
     if (update.sendStatus === 'file_skipped') {
       notificationMessage = 'ファイルサイズ超過のためメタデータのみ送信しました';
     } else if (update.sendStatus === 'failed') {
       notificationMessage = '送信に失敗しました';
+      includeOpenButton = false;
+    } else if (update.sendStatus === 'cancelled') {
+      notificationMessage = '処理をキャンセルしました';
+      includeOpenButton = false;
     }
 
     chrome.notifications.create({
@@ -93,7 +110,7 @@ async function updateProcessingState(update) {
       iconUrl: chrome.runtime.getURL('icon.png'),
       title: 'Paper2Notion',
       message: notificationMessage,
-      buttons: update.sendStatus !== 'failed' ? [
+      buttons: includeOpenButton ? [
         { title: 'Notionページを開く' }
       ] : undefined
     });
@@ -120,6 +137,20 @@ async function getPdfFromTab() {
 // メイン処理関数
 async function processAndSendToNotion(pdfFile) {
   try {
+    if (currentAbortController) {
+      try { currentAbortController.abort(); } catch (e) {}
+    }
+    currentAbortController = new AbortController();
+    cancelRequested = false;
+    const { signal } = currentAbortController;
+
+    const ensureNotCancelled = () => {
+      if (cancelRequested || signal.aborted) {
+        throw new CancellationError();
+      }
+    };
+
+    ensureNotCancelled();
     updateProcessingState({
       isProcessing: true,
       currentStep: 'Notion送信処理を開始します...',
@@ -127,22 +158,29 @@ async function processAndSendToNotion(pdfFile) {
       error: null,
       result: '',
       notionPageUrl: null,
-      pdfFileName: pdfFile.name
+      pdfFileName: pdfFile.name,
+      cancelRequested: false
     });
 
     // 設定を取得
     const config = await new Promise((resolve) => {
       chrome.storage.local.get([
         "geminiApiKey",
+        "geminiModel",
         "notionApiKey",
         "notionDatabaseId",
-        "customPrompt",
-        "geminiModel"
+        "customPrompt"
       ], (result) => resolve(result));
     });
 
+    ensureNotCancelled();
+
     if (!config.geminiApiKey) {
       throw new Error('Gemini APIキーが設定されていません');
+    }
+
+    if (!config.geminiModel || typeof config.geminiModel !== 'string' || !config.geminiModel.trim()) {
+      throw new Error('Geminiモデルが設定されていません');
     }
 
     if (!config.notionApiKey || !config.notionDatabaseId) {
@@ -156,9 +194,52 @@ async function processAndSendToNotion(pdfFile) {
     const metaExtractionPrompt = isReadableFormat ? READABLE_META_EXTRACTION_PROMPT : META_EXTRACTION_PROMPT;
     const summaryPromptDefault = isReadableFormat ? READABLE_SUMMARY_PROMPT : DEFAULT_SUMMARY_PROMPT;
 
+    // 0. PDFテキスト抽出
+    updateProcessingState({ currentStep: 'PDFテキストを抽出中...', progress: 10 });
+    let pdfTextChunks = null;
+    try {
+      const textResult = await extractPdfText(pdfFile, {
+        signal,
+        onProgress: ({ page, totalPages }) => {
+          if (cancelRequested || signal.aborted) {
+            return;
+          }
+          if (!totalPages) {
+            return;
+          }
+          const ratio = Math.min(1, Math.max(0, page / totalPages));
+          const progressValue = 10 + Math.floor(ratio * 8);
+          updateProcessingState({
+            currentStep: `PDFテキストを抽出中... (${page}/${totalPages} ページ)`,
+            progress: Math.min(18, Math.max(10, progressValue))
+          }).catch((err) => console.warn('Failed to update progress state:', err));
+        }
+      });
+      if (textResult && Array.isArray(textResult.chunks) && textResult.chunks.length > 0) {
+        pdfTextChunks = textResult.chunks;
+        updateProcessingState({ currentStep: 'PDFテキストの抽出が完了しました', progress: 18 });
+      } else {
+        updateProcessingState({ currentStep: 'テキスト抽出結果が空のためPDFを直接送信します', progress: 18 });
+      }
+    } catch (e) {
+      if (e.name === 'AbortError') {
+        throw new CancellationError();
+      }
+      console.warn('PDFテキストの抽出に失敗しました。PDFを直接Geminiに送信します。', e);
+      updateProcessingState({ currentStep: 'PDFテキストの抽出に失敗しました。PDFを直接送信します', progress: 18 });
+    }
+
+    ensureNotCancelled();
+
     // 1. メタデータ抽出
-    updateProcessingState({ currentStep: 'Geminiでメタデータ抽出中...', progress: 10 });
-    let metaRaw = await sendPrompt(pdfFile, metaExtractionPrompt, PAPER_META_SCHEMA);
+    updateProcessingState({ currentStep: 'Geminiでメタデータ抽出中...', progress: 25 });
+    let metaRaw = await sendPrompt({
+      prompt: metaExtractionPrompt,
+      schema: PAPER_META_SCHEMA,
+      textChunks: pdfTextChunks,
+      pdfFile: pdfTextChunks ? null : pdfFile,
+      signal
+    });
     let meta = {};
     try {
       if (typeof metaRaw === "string") {
@@ -178,8 +259,10 @@ async function processAndSendToNotion(pdfFile) {
     updateProcessingState({ currentStep: 'DOI検索中...', progress: 30 });
     let metaCrossref = null;
     if (meta && meta.title) {
-      metaCrossref = await searchMetadataByTitle(meta.title);
+      metaCrossref = await searchMetadataByTitle(meta.title, { signal });
     }
+
+    ensureNotCancelled();
 
     if (metaCrossref) {
       if (!metaCrossref.abstract && meta.abstract) {
@@ -201,22 +284,34 @@ async function processAndSendToNotion(pdfFile) {
     // 3. アブストラクトの翻訳
     if (meta.abstract && meta.abstract.trim()) {
       if (!meta.isJapanese) {
-        updateProcessingState({ currentStep: 'アブストラクトの翻訳中...', progress: 50 });
+        updateProcessingState({ currentStep: 'アブストラクトの翻訳中...', progress: 55 });
         try {
           meta.originalAbstract = meta.abstract;
-          meta.abstract = await sendPrompt(null, ABSTRACT_TRANSLATION_PROMPT(meta.abstract));
+          meta.abstract = await sendPrompt({ prompt: ABSTRACT_TRANSLATION_PROMPT(meta.abstract), signal });
           updateProcessingState({ currentStep: 'アブストラクトの翻訳が完了しました', progress: 60 });
         } catch (e) {
+          if (e.name === 'AbortError') {
+            throw new CancellationError();
+          }
           updateProcessingState({ currentStep: 'アブストラクトの翻訳に失敗しました: ' + e.message, progress: 60 });
         }
       }
     }
 
+    ensureNotCancelled();
+
     // 4. 論文要約
     updateProcessingState({ currentStep: 'Geminiで論文要約中...', progress: 70 });
     const summaryPrompt = config.customPrompt || summaryPromptDefault;
-    const summary = await sendPrompt(pdfFile, summaryPrompt);
+    const summary = await sendPrompt({
+      prompt: summaryPrompt,
+      textChunks: pdfTextChunks,
+      pdfFile: pdfTextChunks ? null : pdfFile,
+      signal
+    });
     updateProcessingState({ currentStep: '論文内容の要約が完了しました', progress: 80 });
+
+    ensureNotCancelled();
 
     // journal（ジャーナル名）が100文字を超える場合は切り詰め
     if (meta.journal && typeof meta.journal === "string" && meta.journal.length > 100) {
@@ -232,8 +327,11 @@ async function processAndSendToNotion(pdfFile) {
     let pdfFileUploadId = null;
     let sendStatus = 'success'; // デフォルトは完全成功
 
-    const uploadResult = await uploadFileToNotion(pdfBytes, pdfName, pdfContentType, config.notionApiKey);
+    const uploadResult = await uploadFileToNotion(pdfBytes, pdfName, pdfContentType, config.notionApiKey, { signal });
     if (!uploadResult.success) {
+      if (uploadResult.cancelled) {
+        throw new CancellationError();
+      }
       if (uploadResult.skipFile) {
         // ファイルサイズが大きすぎる場合はアップロードをスキップし、メタデータのみ送信する
         console.warn("ファイルサイズ超過のためメタデータのみ送信します:", uploadResult.message);
@@ -249,7 +347,7 @@ async function processAndSendToNotion(pdfFile) {
     }
 
     updateProcessingState({ currentStep: 'メタデータと要約をNotionに送信中...', progress: 98 });
-    const notionResult = await sendToNotion(meta, summary, pdfFileUploadId, pdfName, config.notionApiKey, config.notionDatabaseId);
+    const notionResult = await sendToNotion(meta, summary, pdfFileUploadId, pdfName, config.notionApiKey, config.notionDatabaseId, { signal });
 
     if (notionResult.success) {
       let completionMessage = 'Notionに送信しました';
@@ -265,21 +363,40 @@ async function processAndSendToNotion(pdfFile) {
         result: completionMessage,
         notionPageUrl: notionResult.pageUrl || null,
         pdfFileName: pdfFile.name,
-        sendStatus: sendStatus
+        sendStatus: sendStatus,
+        cancelRequested: false
       });
     } else {
       throw new Error(notionResult.message);
     }
   } catch (e) {
-    console.error('処理エラー:', e);
-    updateProcessingState({
-      isProcessing: false,
-      currentStep: '',
-      error: `エラー: ${e.message}`,
-      progress: 0,
-      pdfFileName: pdfFile ? pdfFile.name : null,
-      sendStatus: 'failed'
-    });
+    if (e instanceof CancellationError || e.name === 'AbortError') {
+      console.warn('処理がキャンセルされました');
+      updateProcessingState({
+        isProcessing: false,
+        currentStep: '',
+        result: '処理をキャンセルしました',
+        progress: 0,
+        pdfFileName: pdfFile ? pdfFile.name : null,
+        sendStatus: 'cancelled',
+        cancelRequested: false
+      });
+    } else {
+      console.error('処理エラー:', e);
+      updateProcessingState({
+        isProcessing: false,
+        currentStep: '',
+        error: `エラー: ${e.message}`,
+        progress: 0,
+        pdfFileName: pdfFile ? pdfFile.name : null,
+        sendStatus: 'failed',
+        cancelRequested: false
+      });
+    }
+  }
+  finally {
+    currentAbortController = null;
+    cancelRequested = false;
   }
 }
 
@@ -296,7 +413,8 @@ chrome.runtime.onInstalled.addListener(() => {
       error: null,
       notionPageUrl: null,
       pdfFileName: null,
-      sendStatus: null
+      sendStatus: null,
+      cancelRequested: false
     }
   }).catch(e => console.error('初期状態の保存に失敗しました:', e));
 });
@@ -341,6 +459,30 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
     }
     return true;
+  }
+
+  if (message.type === 'cancelProcessing') {
+    if (!processingState.isProcessing) {
+      sendResponse({ success: false, error: '処理は実行されていません' });
+      return false;
+    }
+
+    if (!cancelRequested) {
+      cancelRequested = true;
+      try {
+        currentAbortController?.abort();
+      } catch (e) {
+        console.warn('Abort error:', e);
+      }
+      updateProcessingState({
+        cancelRequested: true,
+        currentStep: 'キャンセル処理中...',
+        progress: Math.min(processingState.progress || 95, 95)
+      });
+    }
+
+    sendResponse({ success: true });
+    return false;
   }
 
   if (message.type === 'getProcessingState') {

@@ -18,6 +18,8 @@
     "notifications"
   ],
   "host_permissions": [
+    "https://*/*",
+    "http://*/*",
     "https://api.notion.com/*",
     "https://api.crossref.org/*",
     "https://export.arxiv.org/*",

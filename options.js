@@ -5,70 +5,65 @@ import { restoreOptions, saveOptions, resetPrompt } from "./utils/optionsStorage
 document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("optionsForm");
   const saveStatus = document.getElementById("saveStatus");
-  const nonReasoningOption = document.getElementById("nonReasoningOption");
-  const modelSelect = document.getElementById("geminiModel");
 
   // 保存済み値を復元
   restoreOptions((options) => {
-    form.geminiApiKey.value = options.geminiApiKey;
+    const {
+      geminiApiKey = "",
+      geminiModel = "",
+      notionApiKey = "",
+      notionDatabaseId = "",
+      customPrompt = ""
+    } = options;
 
-    // セレクトボックスの選択を設定
-    const modelValue = options.geminiModel || "gemini-2.5-flash-preview-05-20";
-    modelSelect.value = modelValue;
-
-    form.notionApiKey.value = options.notionApiKey;
-    form.notionDatabaseId.value = options.notionDatabaseId;
-    form.customPrompt.value = options.customPrompt;
-    form.useNonReasoning.checked = options.useNonReasoning;
-
-    // モデル選択に応じて非推論オプションの表示/非表示を切り替え
-    updateNonReasoningVisibility();
+    form.geminiApiKey.value = geminiApiKey;
+    form.geminiModel.value = geminiModel;
+    form.notionApiKey.value = notionApiKey;
+    form.notionDatabaseId.value = notionDatabaseId;
+    form.customPrompt.value = customPrompt;
   });
 
-  // モデル選択変更時の処理
-  modelSelect.addEventListener('change', () => {
-    updateNonReasoningVisibility();
-  });
+  const statusMarkup = {
+    success: `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>保存されました</span>
+    `,
+    error: `
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <span>保存に失敗しました</span>
+    `
+  };
 
-  // 非推論オプションの表示/非表示を切り替える関数
-  function updateNonReasoningVisibility() {
-    const selectedModel = modelSelect.value;
-    // 2.5-Flashモデルの場合のみ非推論オプションを表示
-    if (selectedModel === "gemini-2.5-flash-preview-05-20") {
-      nonReasoningOption.classList.remove("hidden");
-    } else {
-      nonReasoningOption.classList.add("hidden");
-      // 2.5-Flash以外のモデルが選択された場合、非推論オプションをオフにする
-      form.useNonReasoning.checked = false;
-    }
-  }
+  let hideStatusTimer = null;
+  let clearStatusTimer = null;
 
-  // 保存ステータスを表示する関数
   function showSaveStatus(success = true) {
-    if (success) {
-      saveStatus.innerHTML = `
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <span>保存されました</span>
-      `;
-      saveStatus.className = "flex items-center gap-2 text-green-600 font-medium opacity-100 transition-all duration-300";
-    } else {
-      saveStatus.innerHTML = `
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-        </svg>
-        <span>保存に失敗しました</span>
-      `;
-      saveStatus.className = "flex items-center gap-2 text-red-600 font-medium opacity-100 transition-all duration-300";
+    if (!saveStatus) {
+      return;
     }
 
-    // 3秒後にフェードアウト
-    setTimeout(() => {
-      saveStatus.className = saveStatus.className.replace('opacity-100', 'opacity-0');
-      // さらに1秒後にテキストをクリア
-      setTimeout(() => {
+    if (hideStatusTimer) {
+      clearTimeout(hideStatusTimer);
+      hideStatusTimer = null;
+    }
+    if (clearStatusTimer) {
+      clearTimeout(clearStatusTimer);
+      clearStatusTimer = null;
+    }
+
+    saveStatus.innerHTML = success ? statusMarkup.success : statusMarkup.error;
+    saveStatus.className = "flex items-center gap-2 font-medium transition-all duration-300 opacity-100";
+    saveStatus.classList.add(success ? "text-green-600" : "text-red-600");
+
+    hideStatusTimer = setTimeout(() => {
+      saveStatus.classList.replace("opacity-100", "opacity-0");
+      clearStatusTimer = setTimeout(() => {
         saveStatus.innerHTML = "";
+        saveStatus.className = "";
       }, 300);
     }, 3000);
   }
@@ -77,13 +72,15 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
+    const geminiModel = form.geminiModel.value.trim();
+    form.geminiModel.value = geminiModel;
+
     const options = {
       geminiApiKey: form.geminiApiKey.value,
-      geminiModel: modelSelect.value,
+      geminiModel,
       notionApiKey: form.notionApiKey.value,
       notionDatabaseId: form.notionDatabaseId.value,
-      customPrompt: form.customPrompt.value,
-      useNonReasoning: form.useNonReasoning.checked
+      customPrompt: form.customPrompt.value
     };
 
     try {

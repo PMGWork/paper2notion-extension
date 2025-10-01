@@ -4,6 +4,7 @@ import { getCurrentTabPdf } from "./utils/pdf.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const sendToNotionBtn = document.getElementById("sendToNotionBtn");
+  const cancelBtn = document.getElementById("cancelBtn");
   const progress = document.getElementById("progress");
   const result = document.getElementById("result");
   const browserFileInfo = document.getElementById("browser-file-info");
@@ -67,8 +68,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (state.isProcessing) {
       sendToNotionBtn.disabled = true;
+      if (cancelBtn) {
+        cancelBtn.disabled = !!state.cancelRequested;
+        cancelBtn.setAttribute('data-cancelled', state.cancelRequested ? 'true' : 'false');
+        cancelBtn.classList.toggle('text-slate-600', !state.cancelRequested);
+        cancelBtn.classList.toggle('text-red-600', !!state.cancelRequested);
+        cancelBtn.classList.toggle('border-red-300', !!state.cancelRequested);
+        cancelBtn.innerHTML = state.cancelRequested
+          ? `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/>
+            </svg>
+            <span>キャンセル処理中...</span>
+          `
+          : `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <span>キャンセル</span>
+          `;
+      }
 
-      // プログレス表示
       progress.innerHTML = `
         <div class="flex items-center gap-2">
           <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
@@ -78,13 +98,22 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       progress.className = "mb-3 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3 min-h-[1.5rem]";
 
-      // エラー表示をクリア
       result.textContent = "";
       result.className = "min-h-[1.5rem]";
     } else {
       sendToNotionBtn.disabled = false;
+      if (cancelBtn) {
+        cancelBtn.disabled = true;
+        cancelBtn.classList.remove('text-red-600', 'border-red-300');
+        cancelBtn.classList.add('text-slate-600');
+        cancelBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+          <span>キャンセル</span>
+        `;
+      }
 
-      // プログレス表示をクリア
       if (state.progress === 100) {
         let completionMessage = '処理完了';
         let iconClass = 'text-green-600';
@@ -96,8 +125,11 @@ document.addEventListener("DOMContentLoaded", () => {
           iconClass = 'text-yellow-600';
           bgClass = 'text-yellow-600 bg-yellow-50 border border-yellow-200';
           iconPath = 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-        } else if (state.sendStatus === 'success') {
-          completionMessage = 'Notionに送信しました';
+        } else if (state.sendStatus === 'cancelled') {
+          completionMessage = '処理をキャンセルしました';
+          iconClass = 'text-slate-600';
+          bgClass = 'text-slate-600 bg-slate-100 border border-slate-200';
+          iconPath = 'M18 12H6';
         } else if (state.sendStatus === 'failed') {
           completionMessage = '送信に失敗しました';
           iconClass = 'text-red-600';
@@ -133,10 +165,16 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         result.className = "text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 min-h-[1.5rem]";
       } else if (state.result) {
+        const cancelled = state.sendStatus === 'cancelled';
+        const iconColor = cancelled ? 'text-slate-600' : 'text-green-600';
+        const iconPath = cancelled ? 'M18 12H6' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+        const containerClass = cancelled
+          ? 'text-sm text-slate-600 bg-slate-100 border border-slate-200 rounded-lg p-3 min-h-[1.5rem]'
+          : 'text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 min-h-[1.5rem]';
         result.innerHTML = `
           <div class="flex items-start gap-2">
-            <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            <svg class="w-4 h-4 ${iconColor} mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/>
             </svg>
             <div>
               <div class="break-all whitespace-pre-line">${state.result}</div>
@@ -144,7 +182,10 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>
         `;
-        result.className = "text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 min-h-[1.5rem]";
+        result.className = containerClass;
+      } else {
+        result.textContent = "";
+        result.className = "min-h-[1.5rem]";
       }
     }
   }
@@ -166,6 +207,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // 初期状態でブラウザPDFを読み込み
   loadBrowserPdf();
+
+  if (cancelBtn) {
+    cancelBtn.disabled = true;
+  }
 
   sendToNotionBtn.addEventListener("click", async () => {
     // ブラウザからPDFファイルを取得
@@ -198,6 +243,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     result.textContent = "";
     result.className = "min-h-[1.5rem]";
+
+    if (cancelBtn) {
+      cancelBtn.disabled = false;
+      cancelBtn.classList.remove('text-red-600', 'border-red-300');
+      cancelBtn.classList.add('text-slate-600');
+      cancelBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        <span>キャンセル</span>
+      `;
+    }
 
     // PDFファイルをBase64に変換
     const reader = new FileReader();
@@ -237,6 +294,46 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     reader.readAsDataURL(selectedPdfFile);
   });
+
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", () => {
+      if (cancelBtn.disabled) {
+        return;
+      }
+      cancelBtn.disabled = true;
+      cancelBtn.classList.remove('text-slate-600');
+      cancelBtn.classList.add('text-red-600', 'border-red-300');
+      cancelBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/>
+        </svg>
+        <span>キャンセル処理中...</span>
+      `;
+
+      chrome.runtime.sendMessage({ type: 'cancelProcessing' }, (response) => {
+        if (!response || !response.success) {
+          cancelBtn.disabled = false;
+          cancelBtn.classList.remove('text-red-600', 'border-red-300');
+          cancelBtn.classList.add('text-slate-600');
+          cancelBtn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            <span>キャンセル</span>
+          `;
+          result.innerHTML = `
+            <div class="flex items-start gap-2">
+              <svg class="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <div class="break-all whitespace-pre-line">キャンセルに失敗しました${response && response.error ? `: ${response.error}` : ''}</div>
+            </div>
+          `;
+          result.className = "text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 min-h-[1.5rem]";
+        }
+      });
+    });
+  }
 
   // 設定画面を開く
   const openOptionsBtn = document.getElementById("openOptions");

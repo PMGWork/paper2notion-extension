@@ -5,9 +5,10 @@ import { searchCrossrefByTitle, sortByPublisherPriority, getCrossrefMetadata } f
 import { searchArxivByTitle } from './arxiv.js';
 import { isSimilar } from './similarity.js';
 
-export async function searchMetadataByTitle(title) {
+export async function searchMetadataByTitle(title, options = {}) {
+  const { signal = null } = options;
   // 1. Crossref検索 (5件取得 → 出版社優先度ソート → 類似度判定)
-  const crossrefResults = await searchCrossrefByTitle(title, 5);
+  const crossrefResults = await searchCrossrefByTitle(title, 5, { signal });
 
   if (crossrefResults && crossrefResults.length > 0) {
     const sortedResults = sortByPublisherPriority(crossrefResults);
@@ -15,13 +16,13 @@ export async function searchMetadataByTitle(title) {
     for (const result of sortedResults) {
       const resultTitle = result.title?.[0] || "";
       if (isSimilar(title, resultTitle, 0.85)) {
-        return await getCrossrefMetadata(result.DOI);
+        return await getCrossrefMetadata(result.DOI, { signal });
       }
     }
   }
 
   // 2. ArXiv検索 (フォールバック)
-  const arxivResult = await searchArxivByTitle(title);
+  const arxivResult = await searchArxivByTitle(title, { signal });
   if (arxivResult && isSimilar(title, arxivResult.title, 0.85)) {
     return arxivResult
   }

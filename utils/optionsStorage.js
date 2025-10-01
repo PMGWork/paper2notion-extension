@@ -8,18 +8,16 @@ const OPTION_KEYS = [
   "geminiModel",
   "notionApiKey",
   "notionDatabaseId",
-  "customPrompt",
-  "useNonReasoning"
+  "customPrompt"
 ];
 
 // オプションの初期値
 const defaultOptions = {
   geminiApiKey: "",
-  geminiModel: "gemini-2.5-flash-preview-05-20",
   notionApiKey: "",
+  geminiModel: "",
   notionDatabaseId: "",
-  customPrompt: DEFAULT_SUMMARY_PROMPT,
-  useNonReasoning: true
+  customPrompt: DEFAULT_SUMMARY_PROMPT
 };
 
 // 保存されたオプションを取得

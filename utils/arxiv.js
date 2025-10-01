@@ -9,13 +9,17 @@
  */
 
 // ArXivからタイトルに一致する論文を検索
-export async function searchArxivByTitle(title) {
+export async function searchArxivByTitle(title, options = {}) {
+  const { signal = null } = options;
+  if (signal?.aborted) {
+    throw new DOMException('Aborted', 'AbortError');
+  }
   try {
     // AND検索用のURLを生成
     const andSearchUrl = generateArxivSearchUrl(title, 1, "relevance");
     console.log("ArXiv検索URL:", andSearchUrl);
 
-    const resp = await fetch(andSearchUrl);
+    const resp = await fetch(andSearchUrl, { signal });
     if (!resp.ok) return null;
 
     const xml = await resp.text();
@@ -53,6 +57,9 @@ export async function searchArxivByTitle(title) {
 
     return result;
   } catch (error) {
+    if (error.name === 'AbortError') {
+      throw error;
+    }
     console.error("ArXiv search error:", error);
     return null;
   }

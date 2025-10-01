@@ -50,38 +50,52 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
     }
 
     // URLがPDFかどうかをチェック
+    let shouldAbort = false;
     if (!activeTab.url.toLowerCase().endsWith('.pdf')) {
       try {
-        const response = await fetch(activeTab.url, { method: 'HEAD' });
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/pdf')) {
+        const headResponse = await fetch(activeTab.url, {
+          method: 'HEAD',
+          credentials: 'include'
+        });
+        if (headResponse.ok) {
+          const contentType = headResponse.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/pdf')) {
+            if (resultEl) {
+              resultEl.innerHTML = `
+                <div class="flex items-center gap-2">
+                  <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  <span>現在のタブはPDFではありません</span>
+                </div>
+              `;
+              resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+            }
+            shouldAbort = true;
+          }
+        } else if (![401, 403, 405].includes(headResponse.status)) {
           if (resultEl) {
             resultEl.innerHTML = `
               <div class="flex items-center gap-2">
                 <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
-                <span>現在のタブはPDFではありません</span>
+                <span>タブのコンテンツタイプを確認できませんでした: ${headResponse.status}</span>
               </div>
             `;
             resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
           }
-          return null;
+          shouldAbort = true;
+        } else {
+          console.warn('HEAD request blocked, falling back to direct fetch', headResponse.status);
         }
       } catch (e) {
-        if (resultEl) {
-          resultEl.innerHTML = `
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-              </svg>
-              <span>タブのコンテンツタイプを確認できません: ${e.message}</span>
-            </div>
-          `;
-          resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
-        }
-        return null;
+        console.warn('HEAD request failed, falling back to direct fetch', e);
       }
+    }
+
+    if (shouldAbort) {
+      return null;
     }
 
     // PDFをフェッチ
@@ -95,9 +109,37 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
       progressEl.className = "bg-gradient-to-r from-slate-50 to-blue-50 border border-slate-200 rounded-lg p-3 text-sm text-slate-600 min-h-[3rem] flex items-center";
     }
 
-    const response = await fetch(activeTab.url);
-    if (!response.ok) {
-      throw new Error(`PDFの取得に失敗しました: ${response.status}`);
+    let response;
+    let fetchError = null;
+    try {
+      response = await fetch(activeTab.url, {
+        credentials: 'include',
+        headers: { Accept: 'application/pdf' }
+      });
+    } catch (error) {
+      fetchError = error;
+    }
+
+    if (!response || !response.ok) {
+      const status = response ? response.status : null;
+      if (status && [401, 403].includes(status)) {
+        console.warn('Direct fetch blocked, trying tab-context fetch', status);
+      } else if (fetchError) {
+        console.warn('Direct fetch failed, trying tab-context fetch', fetchError);
+      }
+
+      const fallbackFile = await fetchPdfViaTabContext(activeTab.id, activeTab.url, resultEl);
+      if (fallbackFile) {
+        return fallbackFile;
+      }
+
+      if (response && !response.ok) {
+        throw new Error(`PDFの取得に失敗しました: ${response.status}`);
+      }
+      if (fetchError) {
+        throw fetchError;
+      }
+      throw new Error('PDFの取得に失敗しました');
     }
 
     const pdfBlob = await response.blob();
@@ -338,4 +380,196 @@ export function extractFileName(url) {
   }
 
   return sanitizeFileName(fileName);
+}
+
+/**
+ * コンテンツディスポジションヘッダーからファイル名を抽出
+ * @param {string|null} header
+ * @returns {string|null}
+ */
+function extractFileNameFromContentDisposition(header) {
+  if (!header) {
+    return null;
+  }
+
+  const fileNameMatch = header.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+  if (!fileNameMatch) {
+    return null;
+  }
+
+  const encodedName = fileNameMatch[1] || fileNameMatch[2];
+  try {
+    return decodeURIComponent(encodedName);
+  } catch (e) {
+    return encodedName;
+  }
+}
+
+/**
+ * Base64文字列をUint8Arrayに変換
+ * @param {string} base64
+ * @returns {Uint8Array}
+ */
+function base64ToUint8Array(base64) {
+  const binaryString = atob(base64);
+  const length = binaryString.length;
+  const bytes = new Uint8Array(length);
+  for (let i = 0; i < length; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+/**
+ * タブコンテキストでPDFを取得するフォールバック処理
+ * @param {number} tabId
+ * @param {string} url
+ * @param {HTMLElement|null} resultEl
+ * @returns {Promise<File|null>}
+ */
+async function fetchPdfViaTabContext(tabId, url, resultEl) {
+  if (typeof tabId !== 'number') {
+    return null;
+  }
+
+  try {
+    const [injectionResult] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      args: [url],
+      func: async (targetUrl) => {
+        try {
+          const response = await fetch(targetUrl, {
+            credentials: 'include',
+            headers: { Accept: 'application/pdf' }
+          });
+
+          if (!response.ok) {
+            return { success: false, status: response.status, message: 'failed-response' };
+          }
+
+          const blob = await response.blob();
+          const reader = new FileReader();
+
+          const base64 = await new Promise((resolve, reject) => {
+            reader.onloadend = () => {
+              const result = reader.result;
+              if (typeof result === 'string') {
+                const [, data = ''] = result.split(',');
+                resolve(data);
+              } else {
+                reject(new Error('Unexpected reader result'));
+              }
+            };
+            reader.onerror = () => reject(reader.error || new Error('Failed to read blob'));
+            reader.readAsDataURL(blob);
+          });
+
+          return {
+            success: true,
+            base64,
+            contentType: response.headers.get('content-type') || blob.type || 'application/pdf',
+            disposition: response.headers.get('content-disposition') || null,
+            size: blob.size
+          };
+        } catch (error) {
+          return { success: false, message: error.message || 'unknown-error' };
+        }
+      }
+    });
+
+    const result = injectionResult && injectionResult.result;
+    if (!result || !result.success) {
+      const viewerFallback = await extractPdfFromViewer(tabId);
+      if (viewerFallback && viewerFallback.success) {
+        const bytes = base64ToUint8Array(viewerFallback.base64);
+        const blob = new Blob([bytes], { type: viewerFallback.contentType || 'application/pdf' });
+        const fallbackName = viewerFallback.fileName ? sanitizeFileName(viewerFallback.fileName) : extractFileName(url);
+        return new File([blob], fallbackName, { type: 'application/pdf' });
+      }
+
+      if (resultEl) {
+        const statusMsg = result && result.status ? `: ${result.status}` : '';
+        resultEl.innerHTML = `
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>PDFの取得に失敗しました${statusMsg}</span>
+          </div>
+        `;
+        resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+      }
+      return null;
+    }
+
+    const bytes = base64ToUint8Array(result.base64);
+    const blob = new Blob([bytes], { type: result.contentType || 'application/pdf' });
+
+    const dispositionFileName = extractFileNameFromContentDisposition(result.disposition);
+    const fileName = dispositionFileName ? sanitizeFileName(dispositionFileName) : extractFileName(url);
+
+    return new File([blob], fileName, { type: 'application/pdf' });
+  } catch (error) {
+    console.error('Tab context PDF fetch failed', error);
+    if (resultEl) {
+      resultEl.innerHTML = `
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>PDFの取得中にエラーが発生しました: ${error.message}</span>
+        </div>
+      `;
+      resultEl.className = "bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600 min-h-[3rem] flex items-center";
+    }
+    return null;
+  }
+}
+
+async function extractPdfFromViewer(tabId) {
+  try {
+    const [injectionResult] = await chrome.scripting.executeScript({
+      target: { tabId },
+      world: 'MAIN',
+      func: async () => {
+        try {
+          const viewer = window.PDFViewerApplication;
+          if (!viewer || !viewer.pdfDocument) {
+            return { success: false, message: 'viewer_not_ready' };
+          }
+          const data = await viewer.pdfDocument.getData();
+          const bytes = new Uint8Array(data);
+          const chunkSize = 0x8000;
+          let binary = '';
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            const chunk = bytes.subarray(i, i + chunkSize);
+            binary += String.fromCharCode.apply(null, chunk);
+          }
+          const base64 = btoa(binary);
+          let fileName = null;
+          if (viewer.metadata && viewer.metadata.has('dc:title')) {
+            fileName = viewer.metadata.get('dc:title');
+          } else if (viewer.documentInfo && viewer.documentInfo.Title) {
+            fileName = viewer.documentInfo.Title;
+          }
+
+          return {
+            success: true,
+            base64,
+            contentType: 'application/pdf',
+            fileName,
+            size: bytes.length
+          };
+        } catch (err) {
+          return { success: false, message: err.message };
+        }
+      }
+    });
+
+    return injectionResult?.result || null;
+  } catch (error) {
+    console.warn('extractPdfFromViewer error', error);
+    return null;
+  }
 }
