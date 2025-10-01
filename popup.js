@@ -62,19 +62,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // 処理状態の更新を反映
   function updateUI(state) {
     processingState = state;
+    const isProcessing = state.isProcessing === true;
 
-    if (state.isProcessing) {
-      sendToNotionBtn.disabled = true;
+    if (sendToNotionBtn) {
+      sendToNotionBtn.classList.toggle('hidden', isProcessing);
+      sendToNotionBtn.disabled = isProcessing;
+    }
+    if (cancelBtn) {
+      cancelBtn.classList.toggle('hidden', !isProcessing);
+    }
+
+    let progressMarkup = '';
+    let progressClass = "mb-3 min-h-[1.5rem]";
+
+    if (isProcessing) {
       if (cancelBtn) {
-        cancelBtn.disabled = !!state.cancelRequested;
-        cancelBtn.setAttribute('data-cancelled', state.cancelRequested ? 'true' : 'false');
-        cancelBtn.classList.toggle('text-slate-600', !state.cancelRequested);
-        cancelBtn.classList.toggle('text-red-600', !!state.cancelRequested);
-        cancelBtn.classList.toggle('border-red-300', !!state.cancelRequested);
-        cancelBtn.innerHTML = state.cancelRequested
+        const waiting = !!state.cancelRequested;
+        cancelBtn.disabled = waiting;
+        cancelBtn.classList.toggle('text-slate-600', !waiting);
+        cancelBtn.classList.toggle('text-red-600', waiting);
+        cancelBtn.classList.toggle('border-red-300', waiting);
+        cancelBtn.innerHTML = waiting
           ? `
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/>
@@ -89,19 +99,22 @@ document.addEventListener("DOMContentLoaded", () => {
           `;
       }
 
-      progress.innerHTML = `
+      const stepText = state.currentStep || '処理中です...';
+      const fileLine = state.pdfFileName
+        ? `<div class="text-xs text-blue-700 mt-2">処理中のファイル: ${state.pdfFileName}</div>`
+        : '';
+      progressMarkup = `
         <div class="flex items-center gap-2">
           <div class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-          <span>${state.currentStep}</span>
+          <span>${stepText}</span>
         </div>
-        ${state.pdfFileName ? `<div class="text-xs text-blue-700 mt-2">処理中のファイル: ${state.pdfFileName}</div>` : ''}
+        ${fileLine}
       `;
-      progress.className = "mb-3 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3 min-h-[1.5rem]";
+      progressClass = "mb-3 text-sm text-blue-600 bg-blue-50 border border-blue-200 rounded-lg p-3 min-h-[1.5rem]";
 
       result.textContent = "";
       result.className = "min-h-[1.5rem]";
     } else {
-      sendToNotionBtn.disabled = false;
       if (cancelBtn) {
         cancelBtn.disabled = true;
         cancelBtn.classList.remove('text-red-600', 'border-red-300');
@@ -114,41 +127,45 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
       }
 
-      if (state.progress === 100) {
-        let completionMessage = '処理完了';
-        let iconClass = 'text-green-600';
-        let bgClass = 'text-green-600 bg-green-50 border border-green-200';
-        let iconPath = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+      let message = '';
+      let iconClass = '';
+      let iconPath = '';
+      let bgClass = '';
 
-        if (state.sendStatus === 'file_skipped') {
-          completionMessage = 'ファイルサイズ超過のためメタデータのみ送信しました';
-          iconClass = 'text-yellow-600';
-          bgClass = 'text-yellow-600 bg-yellow-50 border border-yellow-200';
-          iconPath = 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-        } else if (state.sendStatus === 'cancelled') {
-          completionMessage = '処理をキャンセルしました';
-          iconClass = 'text-slate-600';
-          bgClass = 'text-slate-600 bg-slate-100 border border-slate-200';
-          iconPath = 'M18 12H6';
-        } else if (state.sendStatus === 'failed') {
-          completionMessage = '送信に失敗しました';
-          iconClass = 'text-red-600';
-          bgClass = 'text-red-600 bg-red-50 border border-red-200';
-          iconPath = 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
-        }
+      if (state.sendStatus === 'cancelled') {
+        message = '処理をキャンセルしました';
+        iconClass = 'text-slate-600';
+        iconPath = 'M18 12H6';
+        bgClass = 'text-slate-600 bg-slate-100 border border-slate-200';
+      } else if (state.sendStatus === 'file_skipped') {
+        message = 'ファイルサイズ超過のためメタデータのみ送信しました';
+        iconClass = 'text-yellow-600';
+        iconPath = 'M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z';
+        bgClass = 'text-yellow-600 bg-yellow-50 border border-yellow-200';
+      } else if (state.sendStatus === 'failed') {
+        message = '';
+      } else if (state.result) {
+        message = state.result;
+        iconClass = 'text-green-600';
+        iconPath = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+        bgClass = 'text-green-600 bg-green-50 border border-green-200';
+      } else if (state.progress === 100) {
+        message = '処理が完了しました';
+        iconClass = 'text-green-600';
+        iconPath = 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
+        bgClass = 'text-green-600 bg-green-50 border border-green-200';
+      }
 
-        progress.innerHTML = `
+      if (message) {
+        progressMarkup = `
           <div class="flex items-center gap-2">
             <svg class="w-4 h-4 ${iconClass}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/>
             </svg>
-            <span>${completionMessage}</span>
+            <span>${message}</span>
           </div>
         `;
-        progress.className = `mb-3 text-sm ${bgClass} rounded-lg p-3 flex items-center gap-2 min-h-[1.5rem]`;
-      } else {
-        progress.textContent = "";
-        progress.className = "mb-3 min-h-[1.5rem]";
+        progressClass = `mb-3 text-sm ${bgClass} rounded-lg p-3 flex items-center gap-2 min-h-[1.5rem]`;
       }
 
       if (state.error) {
@@ -164,29 +181,18 @@ document.addEventListener("DOMContentLoaded", () => {
           </div>
         `;
         result.className = "text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 min-h-[1.5rem]";
-      } else if (state.result) {
-        const cancelled = state.sendStatus === 'cancelled';
-        const iconColor = cancelled ? 'text-slate-600' : 'text-green-600';
-        const iconPath = cancelled ? 'M18 12H6' : 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z';
-        const containerClass = cancelled
-          ? 'text-sm text-slate-600 bg-slate-100 border border-slate-200 rounded-lg p-3 min-h-[1.5rem]'
-          : 'text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 min-h-[1.5rem]';
-        result.innerHTML = `
-          <div class="flex items-start gap-2">
-            <svg class="w-4 h-4 ${iconColor} mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${iconPath}"/>
-            </svg>
-            <div>
-              <div class="break-all whitespace-pre-line">${state.result}</div>
-              ${state.pdfFileName ? `<div class="text-xs mt-1 opacity-75">ファイル: ${state.pdfFileName}</div>` : ''}
-            </div>
-          </div>
-        `;
-        result.className = containerClass;
       } else {
         result.textContent = "";
         result.className = "min-h-[1.5rem]";
       }
+    }
+
+    if (progressMarkup) {
+      progress.innerHTML = progressMarkup.trim();
+      progress.className = progressClass;
+    } else {
+      progress.textContent = "";
+      progress.className = "mb-3 min-h-[1.5rem]";
     }
   }
 
@@ -210,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (cancelBtn) {
     cancelBtn.disabled = true;
+    cancelBtn.classList.add('hidden');
   }
 
   sendToNotionBtn.addEventListener("click", async () => {
@@ -230,6 +237,14 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
       browserFileInfo.className = "text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 min-h-[3rem] flex items-center";
       return;
+    }
+
+    if (sendToNotionBtn) {
+      sendToNotionBtn.classList.add('hidden');
+      sendToNotionBtn.disabled = true;
+    }
+    if (cancelBtn) {
+      cancelBtn.classList.remove('hidden');
     }
 
     // プログレス表示を開始
@@ -270,16 +285,19 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }, (response) => {
         if (response && response.success) {
-          result.innerHTML = `
-            <div class="flex items-start gap-2">
-              <svg class="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-              </svg>
-              <div>処理を開始しました（${selectedPdfFile.name}）</div>
-            </div>
-          `;
-          result.className = "text-sm text-green-600 bg-green-50 border border-green-200 rounded-lg p-3 min-h-[1.5rem]";
+          result.textContent = "";
+          result.className = "min-h-[1.5rem]";
         } else {
+          if (sendToNotionBtn) {
+            sendToNotionBtn.classList.remove('hidden');
+            sendToNotionBtn.disabled = false;
+          }
+          if (cancelBtn) {
+            cancelBtn.classList.add('hidden');
+            cancelBtn.disabled = true;
+          }
+          progress.textContent = "";
+          progress.className = "mb-3 min-h-[1.5rem]";
           result.innerHTML = `
             <div class="flex items-start gap-2">
               <svg class="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -309,6 +327,16 @@ document.addEventListener("DOMContentLoaded", () => {
         </svg>
         <span>キャンセル処理中...</span>
       `;
+
+      progress.innerHTML = `
+        <div class="flex items-center gap-2">
+          <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6"/>
+          </svg>
+          <span>キャンセル処理をリクエストしています...</span>
+        </div>
+      `;
+      progress.className = "mb-3 text-sm text-slate-600 bg-slate-100 border border-slate-200 rounded-lg p-3 min-h-[1.5rem]";
 
       chrome.runtime.sendMessage({ type: 'cancelProcessing' }, (response) => {
         if (!response || !response.success) {

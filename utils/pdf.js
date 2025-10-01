@@ -122,6 +122,25 @@ export async function getCurrentTabPdf(resultEl, progressEl) {
 
     if (!response || !response.ok) {
       const status = response ? response.status : null;
+      if (status && status === 403 && activeTab.url.includes('/doi/pdf/')) {
+        try {
+          const dlUrl = activeTab.url.includes('download=1')
+            ? activeTab.url
+            : `${activeTab.url}${activeTab.url.includes('?') ? '&' : '?'}download=1`;
+          const altResponse = await fetch(dlUrl, {
+            credentials: 'include',
+            headers: { Accept: 'application/pdf' }
+          });
+          if (altResponse.ok) {
+            const altBlob = await altResponse.blob();
+            const altFile = new File([altBlob], extractFileName(dlUrl), { type: 'application/pdf' });
+            return altFile;
+          }
+        } catch (altErr) {
+          console.warn('Alternate download fetch failed', altErr);
+        }
+      }
+
       if (status && [401, 403].includes(status)) {
         console.warn('Direct fetch blocked, trying tab-context fetch', status);
       } else if (fetchError) {
@@ -534,10 +553,23 @@ async function extractPdfFromViewer(tabId) {
       world: 'MAIN',
       func: async () => {
         try {
-          const viewer = window.PDFViewerApplication;
+          const waitForPdf = async (timeoutMs = 5000, intervalMs = 200) => {
+            const start = performance.now();
+            while (performance.now() - start < timeoutMs) {
+              const viewer = window.PDFViewerApplication;
+              if (viewer && viewer.pdfDocument) {
+                return viewer;
+              }
+              await new Promise(resolve => setTimeout(resolve, intervalMs));
+            }
+            return null;
+          };
+
+          const viewer = await waitForPdf();
           if (!viewer || !viewer.pdfDocument) {
             return { success: false, message: 'viewer_not_ready' };
           }
+
           const data = await viewer.pdfDocument.getData();
           const bytes = new Uint8Array(data);
           const chunkSize = 0x8000;
