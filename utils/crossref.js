@@ -1,11 +1,16 @@
+// crossref.js
 // Crossref API関連の処理
 
-// Crossrefからタイトルに一致する論文を検索
-export async function searchCrossrefByTitle(title, rows = 5, options = {}) {
+import { buildSearchKeywords } from './searchKeywords.js';
+
+// Crossrefからタイトルに一致する論文を取得
+export async function fetchCrossrefByTitle(title, rows = 5, options = {}) {
   const { signal = null } = options;
+  const keywords = buildSearchKeywords(title);
+  const queryTitle = keywords.length ? keywords.join(' ') : (title ?? '').trim();
   const url = "https://api.crossref.org/works";
   const params = new URLSearchParams({
-    "query.title": title,
+    "query.title": queryTitle,
     "rows": rows,
     "sort": "relevance"
   });
@@ -16,23 +21,19 @@ export async function searchCrossrefByTitle(title, rows = 5, options = {}) {
 }
 
 // 出版社の優先度で並べ替え
-export function sortByPublisherPriority(results) {
+export function sortCrossrefByPublisherPriority(results) {
   return results.sort((a, b) => {
-    const publisherA = getPublisherName(a);
-    const publisherB = getPublisherName(b);
+    const publisherA = a.publisher || "";
+    const publisherB = b.publisher || "";
 
-    const priorityA = getPublisherPriority(publisherA);
-    const priorityB = getPublisherPriority(publisherB);
+    const priorityA = getCrossrefPublisherPriority(publisherA);
+    const priorityB = getCrossrefPublisherPriority(publisherB);
 
     return priorityA - priorityB;
   });
 }
-
-function getPublisherName(item) {
-  return item.publisher || "";
-}
-
-function getPublisherPriority(publisher) {
+// 出版社の優先度を取得
+function getCrossrefPublisherPriority(publisher) {
   const publisherLower = publisher.toLowerCase();
   if (publisherLower.includes("acm") || publisherLower.includes("association for computing machinery")) {
     return 1; // ACM: 最高優先度
@@ -44,7 +45,7 @@ function getPublisherPriority(publisher) {
 }
 
 // DOIからCrossrefメタデータを取得
-export async function getCrossrefMetadata(doi, options = {}) {
+export async function fetchCrossrefMetadata(doi, options = {}) {
   const { signal = null } = options;
   const url = `https://api.crossref.org/works/${encodeURIComponent(doi)}`;
   const resp = await fetch(url, { signal });

@@ -14,7 +14,6 @@ import {
 import { sendPrompt } from "./utils/gemini.js";
 import { searchMetadataByTitle } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
-import { extractPdfText } from "./utils/pdfToText.js";
 
 // グローバル変数で処理状態を管理
 let processingState = {
@@ -37,6 +36,38 @@ class CancellationError extends Error {
     super(message);
     this.name = 'CancellationError';
   }
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    const chunk = bytes.subarray(i, i + chunkSize);
+    binary += String.fromCharCode.apply(null, chunk);
+  }
+  return btoa(binary);
+}
+
+async function preparePdfData(pdfFile, { signal } = {}) {
+  if (!pdfFile) {
+    return { bytes: null, base64: '', mimeType: 'application/pdf' };
+  }
+
+  const mimeType = pdfFile.type || 'application/pdf';
+  const bytes = await pdfFile.arrayBuffer();
+
+  if (signal?.aborted) {
+    throw new CancellationError();
+  }
+
+  const base64 = arrayBufferToBase64(bytes);
+
+  if (signal?.aborted) {
+    throw new CancellationError();
+  }
+
+  return { bytes, base64, mimeType };
 }
 
 // 処理状態を更新する関数
@@ -194,40 +225,17 @@ async function processAndSendToNotion(pdfFile) {
     const metaExtractionPrompt = isReadableFormat ? READABLE_META_EXTRACTION_PROMPT : META_EXTRACTION_PROMPT;
     const summaryPromptDefault = isReadableFormat ? READABLE_SUMMARY_PROMPT : DEFAULT_SUMMARY_PROMPT;
 
-    // 0. PDFテキスト抽出
-    updateProcessingState({ currentStep: 'PDFテキストを抽出中...', progress: 10 });
-    let pdfTextChunks = null;
-    try {
-      const textResult = await extractPdfText(pdfFile, {
-        signal,
-        onProgress: ({ page, totalPages }) => {
-          if (cancelRequested || signal.aborted) {
-            return;
-          }
-          if (!totalPages) {
-            return;
-          }
-          const ratio = Math.min(1, Math.max(0, page / totalPages));
-          const progressValue = 10 + Math.floor(ratio * 8);
-          updateProcessingState({
-            currentStep: `PDFテキストを抽出中... (${page}/${totalPages} ページ)`,
-            progress: Math.min(18, Math.max(10, progressValue))
-          }).catch((err) => console.warn('Failed to update progress state:', err));
-        }
-      });
-      if (textResult && Array.isArray(textResult.chunks) && textResult.chunks.length > 0) {
-        pdfTextChunks = textResult.chunks;
-        updateProcessingState({ currentStep: 'PDFテキストの抽出が完了しました', progress: 18 });
-      } else {
-        updateProcessingState({ currentStep: 'テキスト抽出結果が空のためPDFを直接送信します', progress: 18 });
-      }
-    } catch (e) {
-      if (e.name === 'AbortError') {
-        throw new CancellationError();
-      }
-      console.warn('PDFテキストの抽出に失敗しました。PDFを直接Geminiに送信します。', e);
-      updateProcessingState({ currentStep: 'PDFテキストの抽出に失敗しました。PDFを直接送信します', progress: 18 });
-    }
+    const pdfName = pdfFile.name;
+
+    // 0. GeminiにPDFを送信する準備
+    updateProcessingState({ currentStep: 'GeminiにPDFを送信しています...', progress: 10 });
+
+    ensureNotCancelled();
+
+    const pdfData = await preparePdfData(pdfFile, { signal });
+    const pdfBytes = pdfData.bytes;
+    let pdfBase64 = pdfData.base64;
+    const pdfContentType = pdfData.mimeType;
 
     ensureNotCancelled();
 
@@ -236,8 +244,8 @@ async function processAndSendToNotion(pdfFile) {
     let metaRaw = await sendPrompt({
       prompt: metaExtractionPrompt,
       schema: PAPER_META_SCHEMA,
-      textChunks: pdfTextChunks,
-      pdfFile: pdfTextChunks ? null : pdfFile,
+      pdfBase64,
+      pdfMimeType: pdfContentType,
       signal
     });
     let meta = {};
@@ -303,15 +311,13 @@ async function processAndSendToNotion(pdfFile) {
     // 4. 論文要約
     updateProcessingState({ currentStep: 'Geminiで論文要約中...', progress: 70 });
     const summaryPrompt = config.customPrompt || summaryPromptDefault;
-    const summary = await sendPrompt({
-      prompt: summaryPrompt,
-      textChunks: pdfTextChunks,
-      pdfFile: pdfTextChunks ? null : pdfFile,
-      signal
-    });
+    const summary = await sendPrompt({ prompt: summaryPrompt, pdfBase64, pdfMimeType: pdfContentType, signal });
     updateProcessingState({ currentStep: '論文内容の要約が完了しました', progress: 80 });
 
     ensureNotCancelled();
+
+    pdfData.base64 = null;
+    pdfBase64 = null;
 
     // journal（ジャーナル名）が100文字を超える場合は切り詰め
     if (meta.journal && typeof meta.journal === "string" && meta.journal.length > 100) {
@@ -320,9 +326,6 @@ async function processAndSendToNotion(pdfFile) {
 
     // 5. Notionへの送信
     updateProcessingState({ currentStep: 'NotionにPDFアップロード中...', progress: 90 });
-    const pdfBytes = await pdfFile.arrayBuffer();
-    const pdfName = pdfFile.name;
-    const pdfContentType = pdfFile.type || "application/pdf";
 
     let pdfFileUploadId = null;
     let sendStatus = 'success'; // デフォルトは完全成功

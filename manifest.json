@@ -15,7 +15,8 @@
     "scripting",
     "activeTab",
     "tabs",
-    "notifications"
+    "notifications",
+    "declarativeNetRequest"
   ],
   "host_permissions": [
     "https://*/*",
@@ -42,5 +43,14 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; style-src 'self' 'unsafe-inline';"
   },
-  "options_page": "options.html"
+  "options_page": "options.html",
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "acm-dl-referer",
+        "enabled": true,
+        "path": "rules/acmRefererRules.json"
+      }
+    ]
+  }
 }

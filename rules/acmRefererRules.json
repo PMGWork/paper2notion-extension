@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "priority": 1,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        {
+          "header": "Referer",
+          "operation": "set",
+          "value": "https://dl.acm.org/"
+        }
+      ]
+    },
+    "condition": {
+      "urlFilter": "||dl.acm.org/doi/pdf/",
+      "resourceTypes": [
+        "xmlhttprequest",
+        "sub_frame",
+        "main_frame"
+      ]
+    }
+  }
+]

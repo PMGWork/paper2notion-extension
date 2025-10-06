@@ -1,29 +1,35 @@
+// arxiv.js
 // ArXiv API関連の処理
 
-/**
- * arXiv API用 AND検索クエリ生成関数
- * @param {string} title - 検索対象の論文タイトル
- * @param {number} maxResults - 最大結果数（デフォルト: 1）
- * @param {string} sortBy - ソート方法（デフォルト: "relevance"）
- * @returns {string} arXiv API用のURL
- */
+import { buildSearchKeywords } from './searchKeywords.js';
 
-// ArXivからタイトルに一致する論文を検索
-export async function searchArxivByTitle(title, options = {}) {
+// ArXivからタイトルに一致する論文を取得
+export async function fetchArxivByTitle(title, options = {}) {
   const { signal = null } = options;
   if (signal?.aborted) {
     throw new DOMException('Aborted', 'AbortError');
   }
   try {
-    // AND検索用のURLを生成
-    const andSearchUrl = generateArxivSearchUrl(title, 1, "relevance");
+    const keywords = buildSearchKeywords(title);
+    const fallbackTitle = (title ?? '').trim().replace(/"/g, '');
+    const searchQuery = keywords.length
+      ? `ti:(${keywords.join(' AND ')})`
+      : `ti:"${fallbackTitle}"`;
+
+    const params = new URLSearchParams({
+      search_query: searchQuery,
+      max_results: 1,
+      sortBy: "relevance"
+    });
+
+    const andSearchUrl = `https://export.arxiv.org/api/query?${params.toString()}`;
     console.log("ArXiv検索URL:", andSearchUrl);
 
     const resp = await fetch(andSearchUrl, { signal });
     if (!resp.ok) return null;
 
     const xml = await resp.text();
-    const entry = parseArxivXml(xml);
+    const entry = parseArxivEntryFromXml(xml);
 
     if (!entry) {
       console.log("ArXiv検索: 結果が見つかりませんでした");
@@ -64,54 +70,8 @@ export async function searchArxivByTitle(title, options = {}) {
     return null;
   }
 }
-
-// 検索クエリ生成関数
-export function generateArxivSearchUrl(title, maxResults = 1, sortBy = "relevance") {
-  // 検索精度向上のための英語ストップワード
-  const stopWords = [
-    'the', 'a', 'an', 'of', 'to', 'in', 'for', 'with', 'on', 'and', 'via', 'by', 'from', 'at', 'as', 'is', 'are', 'was', 'were', 'be', 'been', 'being', 'that', 'this', 'it', 'into', 'or', 'but', 'not', 'so', 'do', 'does', 'did', 'using', 'over', 'through'
-  ];
-
-  // ハイフンを含む単語パターンを除去する前処理
-  // MULTI-AGENT, MULTI- AGENT, CAD+CAM のようなパターンを除去
-  let cleanedTitle = title
-    .replace(/\b\w*[-+]\s*\w*\b/g, '') // ハイフンやプラス記号を含む単語（記号+空白も含む）を除去
-    .replace(/\s+/g, ' ') // 複数の空白を単一の空白に統一
-    .trim(); // 前後の空白を除去
-
-  // 記号を除去し単語配列化
-  const keywords = cleanedTitle
-    .split(/\s+/) // まず空白で分割
-    .filter(w => {
-      // 長さが1以下の単語を除外
-      if (w.length <= 1) return false;
-      return true;
-    })
-    .map(w => w.replace(/[^A-Za-z0-9]/g, '')) // 各単語から記号を除去
-    .filter(w => {
-      // 記号除去後の長さチェック
-      if (w.length <= 1) return false;
-      // ストップワードを除外
-      if (stopWords.includes(w.toLowerCase())) return false;
-      return true;
-    });
-
-  // AND 検索クエリを生成
-  const query = `ti:(${keywords.join(' AND ')})`;
-
-  // URLパラメータ化
-  const params = new URLSearchParams({
-    search_query: query,
-    max_results: maxResults,
-    sortBy: sortBy
-  });
-
-  // 完成URL
-  return `https://export.arxiv.org/api/query?${params.toString()}`;
-}
-
 // ArXiv XMLを解析して論文情報を抽出
-function parseArxivXml(xml) {
+function parseArxivEntryFromXml(xml) {
   try {
     // <entry>タグが存在するかチェック
     const entryMatch = xml.match(/<entry>([\s\S]*?)<\/entry>/);

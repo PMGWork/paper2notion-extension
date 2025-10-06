@@ -5,7 +5,15 @@ const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models
 const DOCUMENT_CONTEXT_PREAMBLE = "You are given the content of an academic paper split into <document index=\"n\"> blocks. Base every response only on that content.";
 
 // Gemini APIにプロンプトを送信
-export async function sendPrompt({ prompt, schema = null, pdfFile = null, textChunks = null, signal = null }) {
+export async function sendPrompt({
+  prompt,
+  schema = null,
+  pdfFile = null,
+  pdfBase64 = null,
+  pdfMimeType = "application/pdf",
+  textChunks = null,
+  signal = null
+}) {
   if (!prompt || typeof prompt !== "string") {
     throw new Error("prompt is required");
   }
@@ -39,13 +47,20 @@ export async function sendPrompt({ prompt, schema = null, pdfFile = null, textCh
             parts.push({ text: `<document index="${index + 1}">\n${chunk}\n</document>` });
           }
         });
+      } else if (typeof pdfBase64 === "string" && pdfBase64.length > 0) {
+        parts.push({
+          inline_data: {
+            mime_type: pdfMimeType || "application/pdf",
+            data: pdfBase64
+          }
+        });
       } else if (pdfFile) {
-        const pdfBase64 = await fileToBase64(pdfFile);
-        if (pdfBase64) {
+        const encoded = await fileToBase64(pdfFile);
+        if (encoded) {
           parts.push({
             inline_data: {
               mime_type: "application/pdf",
-              data: pdfBase64
+              data: encoded
             }
           });
         }
