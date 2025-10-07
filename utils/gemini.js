@@ -12,119 +12,116 @@ export async function sendPrompt({
   pdfBase64 = null,
   pdfMimeType = "application/pdf",
   textChunks = null,
-  signal = null
+  signal = null,
+  apiKey,
+  model,
+  generationConfig = null
 }) {
   if (!prompt || typeof prompt !== "string") {
     throw new Error("prompt is required");
   }
 
-  return new Promise((resolve, reject) => {
-    chrome.storage.local.get(["geminiApiKey", "geminiModel"], async (items) => {
-      const GEMINI_API_KEY = items.geminiApiKey || "";
-      const GEMINI_MODEL = typeof items.geminiModel === "string" ? items.geminiModel.trim() : "";
+  const geminiApiKey = typeof apiKey === "string" ? apiKey.trim() : "";
+  if (!geminiApiKey) {
+    throw new Error("Gemini APIキーが未設定です");
+  }
 
-      if (!GEMINI_API_KEY) {
-        reject(new Error("Gemini APIキーが未設定です"));
-        return;
-      }
+  const geminiModel = typeof model === "string" ? model.trim() : "";
+  if (!geminiModel) {
+    throw new Error("Geminiモデルが未設定です");
+  }
 
-      if (!GEMINI_MODEL) {
-        reject(new Error("Geminiモデルが未設定です"));
-        return;
-      }
+  if (signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
+  }
 
-      if (signal?.aborted) {
-        reject(new DOMException('Aborted', 'AbortError'));
-        return;
-      }
+  const apiUrl = `${GEMINI_BASE_URL}${geminiModel}:generateContent`;
+  const parts = [];
 
-      const apiUrl = `${GEMINI_BASE_URL}${GEMINI_MODEL}:generateContent`;
-      const parts = [];
-
-      if (Array.isArray(textChunks) && textChunks.length > 0) {
-        textChunks.forEach((chunk, index) => {
-          if (typeof chunk === "string" && chunk.trim().length > 0) {
-            parts.push({ text: `<document index="${index + 1}">\n${chunk}\n</document>` });
-          }
-        });
-      } else if (typeof pdfBase64 === "string" && pdfBase64.length > 0) {
-        parts.push({
-          inline_data: {
-            mime_type: pdfMimeType || "application/pdf",
-            data: pdfBase64
-          }
-        });
-      } else if (pdfFile) {
-        const encoded = await fileToBase64(pdfFile);
-        if (encoded) {
-          parts.push({
-            inline_data: {
-              mime_type: "application/pdf",
-              data: encoded
-            }
-          });
-        }
-      }
-
-      const finalPrompt = (Array.isArray(textChunks) && textChunks.length > 0)
-        ? `${DOCUMENT_CONTEXT_PREAMBLE}\n\n${prompt}`
-        : prompt;
-      parts.push({ text: finalPrompt });
-
-      const body = {
-        contents: [
-          {
-            parts
-          }
-        ],
-        generationConfig: {}
-      };
-
-      if (schema) {
-        body.generationConfig.responseMimeType = "application/json";
-        body.generationConfig.responseSchema = schema;
-      }
-
-      try {
-        const resp = await fetch(`${apiUrl}?key=${GEMINI_API_KEY}`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(body),
-          signal
-        });
-
-        if (!resp.ok) {
-          reject(new Error("Gemini APIエラー: " + resp.status));
-          return;
-        }
-
-        const data = await resp.json();
-        console.log("Gemini API response:", data);
-
-        if (data.candidates && data.candidates.length > 0 &&
-            data.candidates[0].content && data.candidates[0].content.parts &&
-            data.candidates[0].content.parts.length > 0) {
-          const textResponse = data.candidates[0].content.parts[0].text;
-
-          if (schema) {
-            try {
-              const jsonResponse = JSON.parse(textResponse);
-              resolve(jsonResponse);
-            } catch (error) {
-              console.error("JSONパースエラー:", error);
-              resolve(textResponse);
-            }
-          } else {
-            resolve(textResponse);
-          }
-        } else {
-          reject(new Error("Gemini APIから有効なレスポンスが返されませんでした"));
-        }
-      } catch (error) {
-        reject(error);
+  if (Array.isArray(textChunks) && textChunks.length > 0) {
+    textChunks.forEach((chunk, index) => {
+      if (typeof chunk === "string" && chunk.trim().length > 0) {
+        parts.push({ text: `<document index="${index + 1}">\n${chunk}\n</document>` });
       }
     });
+  } else if (typeof pdfBase64 === "string" && pdfBase64.length > 0) {
+    parts.push({
+      inline_data: {
+        mime_type: pdfMimeType || "application/pdf",
+        data: pdfBase64
+      }
+    });
+  } else if (pdfFile) {
+    const encoded = await fileToBase64(pdfFile);
+    if (encoded) {
+      parts.push({
+        inline_data: {
+          mime_type: "application/pdf",
+          data: encoded
+        }
+      });
+    }
+  }
+
+  const finalPrompt = (Array.isArray(textChunks) && textChunks.length > 0)
+    ? `${DOCUMENT_CONTEXT_PREAMBLE}\n\n${prompt}`
+    : prompt;
+  parts.push({ text: finalPrompt });
+
+  const body = {
+    contents: [
+      {
+        parts
+      }
+    ],
+    generationConfig: {}
+  };
+
+  if (schema) {
+    body.generationConfig.responseMimeType = "application/json";
+    body.generationConfig.responseSchema = schema;
+  }
+
+  if (generationConfig && typeof generationConfig === "object") {
+    Object.assign(body.generationConfig, generationConfig);
+  }
+
+  if (Object.keys(body.generationConfig).length === 0) {
+    delete body.generationConfig;
+  }
+
+  const resp = await fetch(`${apiUrl}?key=${geminiApiKey}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    signal
   });
+
+  if (!resp.ok) {
+    throw new Error("Gemini APIエラー: " + resp.status);
+  }
+
+  const data = await resp.json();
+  console.log("Gemini API response:", data);
+
+  if (data.candidates && data.candidates.length > 0 &&
+      data.candidates[0].content && data.candidates[0].content.parts &&
+      data.candidates[0].content.parts.length > 0) {
+    const textResponse = data.candidates[0].content.parts[0].text;
+
+    if (!schema) {
+      return textResponse;
+    }
+
+    try {
+      return JSON.parse(textResponse);
+    } catch (error) {
+      console.error("JSONパースエラー:", error);
+      return textResponse;
+    }
+  }
+
+  throw new Error("Gemini APIから有効なレスポンスが返されませんでした");
 }
 
 // ファイルをBase64エンコード

@@ -32,6 +32,7 @@ export function sortCrossrefByPublisherPriority(results) {
     return priorityA - priorityB;
   });
 }
+
 // 出版社の優先度を取得
 function getCrossrefPublisherPriority(publisher) {
   const publisherLower = publisher.toLowerCase();

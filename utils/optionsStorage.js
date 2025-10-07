@@ -5,7 +5,6 @@ import { DEFAULT_SUMMARY_PROMPT } from "./prompts.js";
 
 const OPTION_KEYS = [
   "geminiApiKey",
-  "geminiModel",
   "notionApiKey",
   "notionDatabaseId",
   "customPrompt"
@@ -15,7 +14,6 @@ const OPTION_KEYS = [
 const defaultOptions = {
   geminiApiKey: "",
   notionApiKey: "",
-  geminiModel: "",
   notionDatabaseId: "",
   customPrompt: DEFAULT_SUMMARY_PROMPT
 };

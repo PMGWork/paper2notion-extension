@@ -10,14 +10,12 @@ document.addEventListener("DOMContentLoaded", () => {
   restoreOptions((options) => {
     const {
       geminiApiKey = "",
-      geminiModel = "",
       notionApiKey = "",
       notionDatabaseId = "",
       customPrompt = ""
     } = options;
 
     form.geminiApiKey.value = geminiApiKey;
-    form.geminiModel.value = geminiModel;
     form.notionApiKey.value = notionApiKey;
     form.notionDatabaseId.value = notionDatabaseId;
     form.customPrompt.value = customPrompt;
@@ -72,12 +70,8 @@ document.addEventListener("DOMContentLoaded", () => {
   form.addEventListener("submit", (e) => {
     e.preventDefault();
 
-    const geminiModel = form.geminiModel.value.trim();
-    form.geminiModel.value = geminiModel;
-
     const options = {
       geminiApiKey: form.geminiApiKey.value,
-      geminiModel,
       notionApiKey: form.notionApiKey.value,
       notionDatabaseId: form.notionDatabaseId.value,
       customPrompt: form.customPrompt.value

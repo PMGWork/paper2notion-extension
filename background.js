@@ -6,14 +6,14 @@ import { getCurrentTabPdf } from "./utils/pdf.js";
 import {
   META_EXTRACTION_PROMPT,
   PAPER_META_SCHEMA,
-  ABSTRACT_TRANSLATION_PROMPT,
-  DEFAULT_SUMMARY_PROMPT,
-  READABLE_META_EXTRACTION_PROMPT,
-  READABLE_SUMMARY_PROMPT
+  DEFAULT_SUMMARY_PROMPT
 } from "./utils/prompts.js";
 import { sendPrompt } from "./utils/gemini.js";
 import { searchMetadataByTitle } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
+
+const GEMINI_LITE_MODEL = "gemini-2.5-flash-lite-preview-09-2025";
+const GEMINI_FLASH_MODEL = "gemini-2.5-flash-preview-09-2025";
 
 // グローバル変数で処理状態を管理
 let processingState = {
@@ -197,7 +197,6 @@ async function processAndSendToNotion(pdfFile) {
     const config = await new Promise((resolve) => {
       chrome.storage.local.get([
         "geminiApiKey",
-        "geminiModel",
         "notionApiKey",
         "notionDatabaseId",
         "customPrompt"
@@ -210,20 +209,13 @@ async function processAndSendToNotion(pdfFile) {
       throw new Error('Gemini APIキーが設定されていません');
     }
 
-    if (!config.geminiModel || typeof config.geminiModel !== 'string' || !config.geminiModel.trim()) {
-      throw new Error('Geminiモデルが設定されていません');
-    }
-
     if (!config.notionApiKey || !config.notionDatabaseId) {
       throw new Error('Notion APIキーまたはデータベースIDが設定されていません');
     }
 
-    // PDFがReadable形式かどうかを判定
-    const isReadableFormat = pdfFile.name.startsWith("al-");
-
     // 使用するプロンプトを選択
-    const metaExtractionPrompt = isReadableFormat ? READABLE_META_EXTRACTION_PROMPT : META_EXTRACTION_PROMPT;
-    const summaryPromptDefault = isReadableFormat ? READABLE_SUMMARY_PROMPT : DEFAULT_SUMMARY_PROMPT;
+    const metaExtractionPrompt = META_EXTRACTION_PROMPT;
+    const summaryPromptDefault = DEFAULT_SUMMARY_PROMPT;
 
     const pdfName = pdfFile.name;
 
@@ -246,7 +238,15 @@ async function processAndSendToNotion(pdfFile) {
       schema: PAPER_META_SCHEMA,
       pdfBase64,
       pdfMimeType: pdfContentType,
-      signal
+      signal,
+      apiKey: config.geminiApiKey,
+      model: GEMINI_LITE_MODEL,
+      generationConfig: {
+        thinkingConfig: {
+          includeThoughts: false,
+          thinkingBudget: 0
+        }
+      }
     });
     let meta = {};
     try {
@@ -289,29 +289,19 @@ async function processAndSendToNotion(pdfFile) {
       meta.abstract = meta.abstract || "";
     }
 
-    // 3. アブストラクトの翻訳
-    if (meta.abstract && meta.abstract.trim()) {
-      if (!meta.isJapanese) {
-        updateProcessingState({ currentStep: 'アブストラクトの翻訳中...', progress: 55 });
-        try {
-          meta.originalAbstract = meta.abstract;
-          meta.abstract = await sendPrompt({ prompt: ABSTRACT_TRANSLATION_PROMPT(meta.abstract), signal });
-          updateProcessingState({ currentStep: 'アブストラクトの翻訳が完了しました', progress: 60 });
-        } catch (e) {
-          if (e.name === 'AbortError') {
-            throw new CancellationError();
-          }
-          updateProcessingState({ currentStep: 'アブストラクトの翻訳に失敗しました: ' + e.message, progress: 60 });
-        }
-      }
-    }
-
     ensureNotCancelled();
 
-    // 4. 論文要約
+    // 3. 論文要約
     updateProcessingState({ currentStep: 'Geminiで論文要約中...', progress: 70 });
     const summaryPrompt = config.customPrompt || summaryPromptDefault;
-    const summary = await sendPrompt({ prompt: summaryPrompt, pdfBase64, pdfMimeType: pdfContentType, signal });
+    const summary = await sendPrompt({
+      prompt: summaryPrompt,
+      pdfBase64,
+      pdfMimeType: pdfContentType,
+      signal,
+      apiKey: config.geminiApiKey,
+      model: GEMINI_FLASH_MODEL
+    });
     updateProcessingState({ currentStep: '論文内容の要約が完了しました', progress: 80 });
 
     ensureNotCancelled();
@@ -324,7 +314,7 @@ async function processAndSendToNotion(pdfFile) {
       meta.journal = meta.journal.slice(0, 100);
     }
 
-    // 5. Notionへの送信
+    // 4. Notionへの送信
     updateProcessingState({ currentStep: 'NotionにPDFアップロード中...', progress: 90 });
 
     let pdfFileUploadId = null;

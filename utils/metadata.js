@@ -57,6 +57,3 @@ function extractCrossrefTitle(result) {
   }
   return result.title;
 }
-
-// 後方互換性のため類似度判定関数もエクスポート
-export { isSimilar } from './similarity.js';
