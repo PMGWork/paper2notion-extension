@@ -7,20 +7,18 @@ export const PAPER_META_SCHEMA = {
   properties: {
     title: { type: "STRING" },
     authors: { type: "STRING" },
-    year: { type: "INTEGER" },
-    abstract: { type: "STRING" }
+    year: { type: "INTEGER" }
   },
 };
 
 // メタデータ抽出用のプロンプト
 export const META_EXTRACTION_PROMPT =
 `この論文PDFから以下の情報を取得し、JSON形式で出力してください。
-日本語の論文の場合は、日本語の論文タイトル、著者名、アブストラクトを優先して取得してください。
+日本語の論文の場合は、日本語の論文タイトル、著者名を優先して取得してください。
 各項目には以下の内容を含めてください。
 - 'title': 論文の正確なタイトル
 - 'authors': 全ての著者の氏名をカンマ区切りで列挙、姓と名の間には半角スペースを入れる
-- 'year': 出版年（西暦）
-- 'abstract': アブストラクトの全文を出力し、段落分けや改行を削除し1行の文章にしてください`;
+- 'year': 出版年（西暦）`;
 
 // 要約用のデフォルトプロンプト
 export const DEFAULT_SUMMARY_PROMPT =

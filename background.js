@@ -240,7 +240,7 @@ async function processAndSendToNotion(pdfFile) {
       pdfMimeType: pdfContentType,
       signal,
       apiKey: config.geminiApiKey,
-      model: GEMINI_LITE_MODEL,
+      model: GEMINI_FLASH_MODEL,
       generationConfig: {
         thinkingConfig: {
           includeThoughts: false,
@@ -273,9 +273,6 @@ async function processAndSendToNotion(pdfFile) {
     ensureNotCancelled();
 
     if (metaCrossref) {
-      if (!metaCrossref.abstract && meta.abstract) {
-        metaCrossref.abstract = meta.abstract;
-      }
       Object.assign(meta, metaCrossref);
       updateProcessingState({ currentStep: 'CrossrefまたはArXivからメタデータを取得し補完しました', progress: 40 });
     } else {
@@ -286,7 +283,6 @@ async function processAndSendToNotion(pdfFile) {
       meta.journal = meta.journal || "";
       meta.year = meta.year || null;
       meta.doi = meta.doi || null; // DOIがない場合はnullのまま
-      meta.abstract = meta.abstract || "";
     }
 
     ensureNotCancelled();

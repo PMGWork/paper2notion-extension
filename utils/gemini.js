@@ -17,8 +17,13 @@ export async function sendPrompt({
   model,
   generationConfig = null
 }) {
+  // 入力のバリデーション
   if (!prompt || typeof prompt !== "string") {
-    throw new Error("prompt is required");
+    throw new Error("プロンプトが未設定です");
+  }
+
+  if (signal?.aborted) {
+    throw new DOMException("Aborted", "AbortError");
   }
 
   const geminiApiKey = typeof apiKey === "string" ? apiKey.trim() : "";
@@ -31,20 +36,20 @@ export async function sendPrompt({
     throw new Error("Geminiモデルが未設定です");
   }
 
-  if (signal?.aborted) {
-    throw new DOMException("Aborted", "AbortError");
-  }
-
+  // API URLを構築
   const apiUrl = `${GEMINI_BASE_URL}${geminiModel}:generateContent`;
   const parts = [];
 
+  // ドキュメントデータを parts に追加
   if (Array.isArray(textChunks) && textChunks.length > 0) {
+    // テキストチャンクがある場合、各チャンクを<document>タグで囲んで追加
     textChunks.forEach((chunk, index) => {
       if (typeof chunk === "string" && chunk.trim().length > 0) {
         parts.push({ text: `<document index="${index + 1}">\n${chunk}\n</document>` });
       }
     });
   } else if (typeof pdfBase64 === "string" && pdfBase64.length > 0) {
+    // Base64エンコードされたPDFがある場合、インラインデータとして追加
     parts.push({
       inline_data: {
         mime_type: pdfMimeType || "application/pdf",
@@ -52,6 +57,7 @@ export async function sendPrompt({
       }
     });
   } else if (pdfFile) {
+    // PDFファイルがある場合、Base64にエンコードして追加
     const encoded = await fileToBase64(pdfFile);
     if (encoded) {
       parts.push({
@@ -63,11 +69,13 @@ export async function sendPrompt({
     }
   }
 
+  // プロンプトを構築して parts に追加
   const finalPrompt = (Array.isArray(textChunks) && textChunks.length > 0)
     ? `${DOCUMENT_CONTEXT_PREAMBLE}\n\n${prompt}`
     : prompt;
   parts.push({ text: finalPrompt });
 
+  // リクエストボディを構築
   const body = {
     contents: [
       {
@@ -77,19 +85,23 @@ export async function sendPrompt({
     generationConfig: {}
   };
 
+  // スキーマが指定されている場合、JSON出力を設定
   if (schema) {
     body.generationConfig.responseMimeType = "application/json";
     body.generationConfig.responseSchema = schema;
   }
 
+  // 追加の生成設定をマージ
   if (generationConfig && typeof generationConfig === "object") {
     Object.assign(body.generationConfig, generationConfig);
   }
 
+  // generationConfigが空の場合は削除
   if (Object.keys(body.generationConfig).length === 0) {
     delete body.generationConfig;
   }
 
+  // Gemini APIにリクエストを送信
   const resp = await fetch(`${apiUrl}?key=${geminiApiKey}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -101,18 +113,22 @@ export async function sendPrompt({
     throw new Error("Gemini APIエラー: " + resp.status);
   }
 
+  // レスポンスを解析
   const data = await resp.json();
-  console.log("Gemini API response:", data);
+  console.log("Gemini APIレスポンス:", data);
 
+  // レスポンスからテキストを抽出
   if (data.candidates && data.candidates.length > 0 &&
       data.candidates[0].content && data.candidates[0].content.parts &&
       data.candidates[0].content.parts.length > 0) {
     const textResponse = data.candidates[0].content.parts[0].text;
 
+    // スキーマが指定されていない場合、テキストをそのまま返す
     if (!schema) {
       return textResponse;
     }
 
+    // スキーマが指定されている場合、JSONとしてパース
     try {
       return JSON.parse(textResponse);
     } catch (error) {

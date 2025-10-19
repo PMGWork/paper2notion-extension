@@ -151,9 +151,6 @@ export async function sendToNotion(meta, summary, pdfFileUploadId = null, pdfNam
     ...(journal ? { "ジャーナル": { select: { name: journal } } } : {}),
     "DOI": {
       url: meta.doi || null
-    },
-    "アブスト": {
-      rich_text: [{ text: { content: meta.abstract || "" } }]
     }
   };
 
