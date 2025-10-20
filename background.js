@@ -12,8 +12,7 @@ import { sendPrompt } from "./utils/gemini.js";
 import { searchMetadataByTitle } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
 
-const GEMINI_FLASH_LITE_MODEL = "gemini-2.5-flash-lite-preview-09-2025";
-const GEMINI_FLASH_MODEL = "gemini-2.5-flash-preview-09-2025";
+const GEMINI_FLASH_MODEL = "gemini-flash-latest";
 
 // グローバル変数で処理状態を管理
 let processingState = {
@@ -240,7 +239,7 @@ async function processAndSendToNotion(pdfFile) {
       pdfMimeType: pdfContentType,
       signal,
       apiKey: config.geminiApiKey,
-      model: GEMINI_FLASH_LITE_MODEL,
+      model: GEMINI_FLASH_MODEL,
       generationConfig: {
         thinkingConfig: {
           includeThoughts: false,
