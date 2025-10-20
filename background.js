@@ -12,7 +12,7 @@ import { sendPrompt } from "./utils/gemini.js";
 import { searchMetadataByTitle } from "./utils/metadata.js";
 import { uploadFileToNotion, sendToNotion } from "./utils/notion.js";
 
-const GEMINI_LITE_MODEL = "gemini-2.5-flash-lite-preview-09-2025";
+const GEMINI_FLASH_LITE_MODEL = "gemini-2.5-flash-lite-preview-09-2025";
 const GEMINI_FLASH_MODEL = "gemini-2.5-flash-preview-09-2025";
 
 // グローバル変数で処理状態を管理
@@ -240,11 +240,11 @@ async function processAndSendToNotion(pdfFile) {
       pdfMimeType: pdfContentType,
       signal,
       apiKey: config.geminiApiKey,
-      model: GEMINI_FLASH_MODEL,
+      model: GEMINI_FLASH_LITE_MODEL,
       generationConfig: {
         thinkingConfig: {
           includeThoughts: false,
-          thinkingBudget: 0
+          thinkingBudget: 8192
         }
       }
     });
@@ -296,7 +296,13 @@ async function processAndSendToNotion(pdfFile) {
       pdfMimeType: pdfContentType,
       signal,
       apiKey: config.geminiApiKey,
-      model: GEMINI_FLASH_MODEL
+      model: GEMINI_FLASH_MODEL,
+      generationConfig: {
+        thinkingConfig: {
+          includeThoughts: false,
+          thinkingBudget: 16384
+        }
+      }
     });
     updateProcessingState({ currentStep: '論文内容の要約が完了しました', progress: 80 });
 
